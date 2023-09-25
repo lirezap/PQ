@@ -85,9 +85,11 @@ public final class Application {
 }
 ```
 
-To run the project you must provide --enable-preview option, like:
+To run the project you must provide `--enable-preview` option, like:
 
+```text
 java -jar --enable-preview target/Application.jar
+```
 
 This sample application creates 25 virtual threads, each thread creates a connection to postgres instance then tried to
 call db status function of native `libpq` C library 10 million times. ( 25 * 10,000,000 = 250,000,000 native function calls).
