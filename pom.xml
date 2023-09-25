@@ -14,23 +14,17 @@
 
     <groupId>ir.jibit</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <name>pq</name>
     <description>FFM used wrapper of postgresql C library</description>
 
     <properties>
+        <!-- Java Version-->
         <java.version>21</java.version>
 
         <!-- Plugins Versioning-->
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>
@@ -43,11 +37,6 @@
                         <arg>--enable-preview</arg>
                     </compilerArgs>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
