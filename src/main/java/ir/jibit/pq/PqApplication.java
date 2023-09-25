@@ -1,13 +1,12 @@
 package ir.jibit.pq;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+/**
+ * Main application class.
+ *
+ * @author Alireza Pourtaghi
+ */
+public final class PqApplication {
 
-@SpringBootApplication
-public class PqApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(PqApplication.class, args);
-	}
-
+    public static void main(final String[] args) {
+    }
 }
