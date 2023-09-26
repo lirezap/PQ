@@ -1,6 +1,7 @@
 package ir.jibit.pq;
 
 import ir.jibit.pq.enums.ConnStatusType;
+import ir.jibit.pq.enums.ExecStatusType;
 import ir.jibit.pq.enums.PGPing;
 import ir.jibit.pq.enums.PGTransactionStatusType;
 
@@ -63,6 +64,7 @@ public final class PQ implements AutoCloseable {
 
     // Command Execution Functions
     private final MethodHandle execHandle;
+    private final MethodHandle resultStatusHandle;
     private final MethodHandle execParamsHandle;
 
     public PQ(final Path path) {
@@ -91,6 +93,7 @@ public final class PQ implements AutoCloseable {
 
         // Command Execution Functions
         this.execHandle = linker.downcallHandle(lib.find(FUNCTION.PQexec.name()).orElseThrow(), FUNCTION.PQexec.fd);
+        this.resultStatusHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultStatus.name()).orElseThrow(), FUNCTION.PQresultStatus.fd);
         this.execParamsHandle = linker.downcallHandle(lib.find(FUNCTION.PQexecParams.name()).orElseThrow(), FUNCTION.PQexecParams.fd);
     }
 
@@ -283,6 +286,41 @@ public final class PQ implements AutoCloseable {
     }
 
     /**
+     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQRESULTSTATUS">More info</a>
+     */
+    public ExecStatusType resultStatus(final MemorySegment pgResult) throws Throwable {
+        switch ((int) resultStatusHandle.invokeExact(pgResult)) {
+            case 0:
+                return ExecStatusType.PGRES_EMPTY_QUERY;
+            case 1:
+                return ExecStatusType.PGRES_COMMAND_OK;
+            case 2:
+                return ExecStatusType.PGRES_TUPLES_OK;
+            case 3:
+                return ExecStatusType.PGRES_COPY_OUT;
+            case 4:
+                return ExecStatusType.PGRES_COPY_IN;
+            case 5:
+                return ExecStatusType.PGRES_BAD_RESPONSE;
+            case 6:
+                return ExecStatusType.PGRES_NONFATAL_ERROR;
+            case 7:
+                return ExecStatusType.PGRES_FATAL_ERROR;
+            case 8:
+                return ExecStatusType.PGRES_COPY_BOTH;
+            case 9:
+                return ExecStatusType.PGRES_SINGLE_TUPLE;
+            case 10:
+                return ExecStatusType.PGRES_PIPELINE_SYNC;
+            case 11:
+                return ExecStatusType.PGRES_PIPELINE_ABORTED;
+
+            default:
+                return ExecStatusType.UNKNOWN;
+        }
+    }
+
+    /**
      * Prints information about a connection to postgresql server.
      *
      * @param pgConn memory segment instance returned by connecting to postgresql server
@@ -345,6 +383,7 @@ public final class PQ implements AutoCloseable {
 
         // Command Execution Functions
         PQexec(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS)),
+        PQresultStatus(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
         PQexecParams(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT));
 
         public final FunctionDescriptor fd;
