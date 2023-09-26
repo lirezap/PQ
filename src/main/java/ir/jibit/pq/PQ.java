@@ -65,6 +65,7 @@ public final class PQ implements AutoCloseable {
     // Command Execution Functions
     private final MethodHandle execHandle;
     private final MethodHandle resultStatusHandle;
+    private final MethodHandle resultErrorMessageHandle;
     private final MethodHandle execParamsHandle;
 
     public PQ(final Path path) {
@@ -94,6 +95,7 @@ public final class PQ implements AutoCloseable {
         // Command Execution Functions
         this.execHandle = linker.downcallHandle(lib.find(FUNCTION.PQexec.name()).orElseThrow(), FUNCTION.PQexec.fd);
         this.resultStatusHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultStatus.name()).orElseThrow(), FUNCTION.PQresultStatus.fd);
+        this.resultErrorMessageHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultErrorMessage.name()).orElseThrow(), FUNCTION.PQresultErrorMessage.fd);
         this.execParamsHandle = linker.downcallHandle(lib.find(FUNCTION.PQexecParams.name()).orElseThrow(), FUNCTION.PQexecParams.fd);
     }
 
@@ -321,6 +323,20 @@ public final class PQ implements AutoCloseable {
     }
 
     /**
+     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
+     */
+    public MemorySegment resultErrorMessage(final MemorySegment pgResult) throws Throwable {
+        return (MemorySegment) resultErrorMessageHandle.invokeExact(pgResult);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
+     */
+    public String resultErrorMessageString(final MemorySegment pgResult) throws Throwable {
+        return resultErrorMessage(pgResult).getUtf8String(0);
+    }
+
+    /**
      * Prints information about a connection to postgresql server.
      *
      * @param pgConn memory segment instance returned by connecting to postgresql server
@@ -384,6 +400,7 @@ public final class PQ implements AutoCloseable {
         // Command Execution Functions
         PQexec(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS)),
         PQresultStatus(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
+        PQresultErrorMessage(FunctionDescriptor.of(ADDRESS, ADDRESS)),
         PQexecParams(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT));
 
         public final FunctionDescriptor fd;
