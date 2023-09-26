@@ -333,7 +333,7 @@ public final class PQ implements AutoCloseable {
      * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
      */
     public String resultErrorMessageString(final MemorySegment pgResult) throws Throwable {
-        return resultErrorMessage(pgResult).getUtf8String(0);
+        return resultErrorMessage(pgResult).reinterpret(256).getUtf8String(0);
     }
 
     /**
