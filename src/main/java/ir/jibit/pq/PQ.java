@@ -64,9 +64,11 @@ public final class PQ implements AutoCloseable {
 
     // Command Execution Functions
     private final MethodHandle execHandle;
+    private final MethodHandle prepareHandle;
+    private final MethodHandle execPreparedHandle;
     private final MethodHandle resultStatusHandle;
     private final MethodHandle resultErrorMessageHandle;
-    private final MethodHandle execParamsHandle;
+    private final MethodHandle clearHandle;
 
     public PQ(final Path path) {
         this.path = path;
@@ -94,9 +96,11 @@ public final class PQ implements AutoCloseable {
 
         // Command Execution Functions
         this.execHandle = linker.downcallHandle(lib.find(FUNCTION.PQexec.name()).orElseThrow(), FUNCTION.PQexec.fd);
+        this.prepareHandle = linker.downcallHandle(lib.find(FUNCTION.PQprepare.name()).orElseThrow(), FUNCTION.PQprepare.fd);
+        this.execPreparedHandle = linker.downcallHandle(lib.find(FUNCTION.PQexecPrepared.name()).orElseThrow(), FUNCTION.PQexecPrepared.fd);
         this.resultStatusHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultStatus.name()).orElseThrow(), FUNCTION.PQresultStatus.fd);
         this.resultErrorMessageHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultErrorMessage.name()).orElseThrow(), FUNCTION.PQresultErrorMessage.fd);
-        this.execParamsHandle = linker.downcallHandle(lib.find(FUNCTION.PQexecParams.name()).orElseThrow(), FUNCTION.PQexecParams.fd);
+        this.clearHandle = linker.downcallHandle(lib.find(FUNCTION.PQclear.name()).orElseThrow(), FUNCTION.PQclear.fd);
     }
 
     /**
@@ -288,7 +292,21 @@ public final class PQ implements AutoCloseable {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQRESULTSTATUS">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">More info</a>
+     */
+    public MemorySegment prepare(final MemorySegment pgConn, final String statementName, final String query,
+                                 final int numberOfParameters) throws Throwable {
+
+        try (final var arena = Arena.ofConfined()) {
+            var sn = arena.allocateUtf8String(statementName);
+            var q = arena.allocateUtf8String(query);
+
+            return (MemorySegment) prepareHandle.invokeExact(pgConn, sn, q, numberOfParameters, NULL);
+        }
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTSTATUS">More info</a>
      */
     public ExecStatusType resultStatus(final MemorySegment pgResult) throws Throwable {
         switch ((int) resultStatusHandle.invokeExact(pgResult)) {
@@ -323,17 +341,24 @@ public final class PQ implements AutoCloseable {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
      */
     public MemorySegment resultErrorMessage(final MemorySegment pgResult) throws Throwable {
         return (MemorySegment) resultErrorMessageHandle.invokeExact(pgResult);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
      */
     public String resultErrorMessageString(final MemorySegment pgResult) throws Throwable {
         return resultErrorMessage(pgResult).reinterpret(1024).getUtf8String(0);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCLEAR">More info</a>
+     */
+    public void clear(final MemorySegment pgResult) throws Throwable {
+        clearHandle.invokeExact(pgResult);
     }
 
     /**
@@ -401,7 +426,9 @@ public final class PQ implements AutoCloseable {
         PQexec(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS)),
         PQresultStatus(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
         PQresultErrorMessage(FunctionDescriptor.of(ADDRESS, ADDRESS)),
-        PQexecParams(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT));
+        PQprepare(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
+        PQexecPrepared(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
+        PQclear(FunctionDescriptor.ofVoid(ADDRESS));
 
         public final FunctionDescriptor fd;
 
