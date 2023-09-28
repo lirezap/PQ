@@ -30,8 +30,10 @@ public final class Layouts {
 
     public static final SequenceLayout PQConnInfoOptionSequence =
             sequenceLayout(PQConnInfoOption);
+
     public static final VarHandle PQConnInfoOptionSequence_keyword_varHandle =
             PQConnInfoOptionSequence.varHandle(sequenceElement(), groupElement("keyword"));
+
     public static final VarHandle PQConnInfoOptionSequence_val_varHandle =
             PQConnInfoOptionSequence.varHandle(sequenceElement(), groupElement("val"));
 }

@@ -6,7 +6,6 @@ package ir.jibit.pq.enums;
  * @author Alireza Pourtaghi
  */
 public enum ExecStatusType {
-
     /**
      * The string sent to the server was empty.
      */
