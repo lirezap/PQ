@@ -127,15 +127,15 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">More info</a>
      */
-    public MemorySegment connInfo(final MemorySegment pgConn) throws Throwable {
-        return (MemorySegment) connInfoHandle.invokeExact(pgConn);
+    public MemorySegment connInfo(final MemorySegment conn) throws Throwable {
+        return (MemorySegment) connInfoHandle.invokeExact(conn);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">More info</a>
      */
-    public Optional<MemorySegment> connInfoOptional(final MemorySegment pgConn) throws Throwable {
-        final var connInfo = connInfo(pgConn);
+    public Optional<MemorySegment> connInfoOptional(final MemorySegment conn) throws Throwable {
+        final var connInfo = connInfo(conn);
         if (!connInfo.equals(NULL)) {
             return Optional.of(connInfo);
         }
@@ -146,15 +146,15 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQFINISH">More info</a>
      */
-    public void finish(final MemorySegment pgConn) throws Throwable {
-        finishHandle.invokeExact(pgConn);
+    public void finish(final MemorySegment conn) throws Throwable {
+        finishHandle.invokeExact(conn);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQRESET">More info</a>
      */
-    public void reset(final MemorySegment pgConn) throws Throwable {
-        resetHandle.invokeExact(pgConn);
+    public void reset(final MemorySegment conn) throws Throwable {
+        resetHandle.invokeExact(conn);
     }
 
     /**
@@ -181,22 +181,22 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-misc.html#LIBPQ-PQCONNINFOFREE">More info</a>
      */
-    public void connInfoFree(final MemorySegment connIfo) throws Throwable {
-        connInfoFreeHandle.invokeExact(connIfo);
+    public void connInfoFree(final MemorySegment connOptions) throws Throwable {
+        connInfoFreeHandle.invokeExact(connOptions);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQDB">More info</a>
      */
-    public MemorySegment db(final MemorySegment pgConn) throws Throwable {
-        return (MemorySegment) dbHandle.invokeExact(pgConn);
+    public MemorySegment db(final MemorySegment conn) throws Throwable {
+        return (MemorySegment) dbHandle.invokeExact(conn);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSTATUS">More info</a>
      */
-    public ConnStatusType status(final MemorySegment pgConn) throws Throwable {
-        switch ((int) statusHandle.invokeExact(pgConn)) {
+    public ConnStatusType status(final MemorySegment conn) throws Throwable {
+        switch ((int) statusHandle.invokeExact(conn)) {
             case 0:
                 return ConnStatusType.CONNECTION_OK;
             case 1:
@@ -210,8 +210,8 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQTRANSACTIONSTATUS">More info</a>
      */
-    public PGTransactionStatusType transactionStatus(final MemorySegment pgConn) throws Throwable {
-        switch ((int) transactionStatusHandle.invokeExact(pgConn)) {
+    public PGTransactionStatusType transactionStatus(final MemorySegment conn) throws Throwable {
+        switch ((int) transactionStatusHandle.invokeExact(conn)) {
             case 0:
                 return PGTransactionStatusType.PQTRANS_IDLE;
             case 1:
@@ -231,36 +231,36 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQPROTOCOLVERSION">More info</a>
      */
-    public int protocolVersion(final MemorySegment pgConn) throws Throwable {
-        return (int) protocolVersionHandle.invokeExact(pgConn);
+    public int protocolVersion(final MemorySegment conn) throws Throwable {
+        return (int) protocolVersionHandle.invokeExact(conn);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSERVERVERSION">More info</a>
      */
-    public int serverVersion(final MemorySegment pgConn) throws Throwable {
-        return (int) serverVersionHandle.invokeExact(pgConn);
+    public int serverVersion(final MemorySegment conn) throws Throwable {
+        return (int) serverVersionHandle.invokeExact(conn);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQERRORMESSAGE">More info</a>
      */
-    public MemorySegment errorMessage(final MemorySegment pgConn) throws Throwable {
-        return (MemorySegment) errorMessageHandle.invokeExact(pgConn);
+    public MemorySegment errorMessage(final MemorySegment conn) throws Throwable {
+        return (MemorySegment) errorMessageHandle.invokeExact(conn);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">More info</a>
      */
-    public int socket(final MemorySegment pgConn) throws Throwable {
-        return (int) socketHandle.invokeExact(pgConn);
+    public int socket(final MemorySegment conn) throws Throwable {
+        return (int) socketHandle.invokeExact(conn);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">More info</a>
      */
-    public Optional<Integer> socketOptional(final MemorySegment pgConn) throws Throwable {
-        final var socket = (int) socketHandle.invokeExact(pgConn);
+    public Optional<Integer> socketOptional(final MemorySegment conn) throws Throwable {
+        final var socket = (int) socketHandle.invokeExact(conn);
         if (socket > 0) {
             return Optional.of(socket);
         }
@@ -271,37 +271,37 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQBACKENDPID">More info</a>
      */
-    public int backendPid(final MemorySegment pgConn) throws Throwable {
-        return (int) backendPidHandle.invokeExact(pgConn);
+    public int backendPid(final MemorySegment conn) throws Throwable {
+        return (int) backendPidHandle.invokeExact(conn);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">More info</a>
      */
-    public MemorySegment exec(final MemorySegment pgConn, final String query) throws Throwable {
+    public MemorySegment exec(final MemorySegment conn, final String command) throws Throwable {
         try (final var arena = Arena.ofConfined()) {
-            return (MemorySegment) execHandle.invokeExact(pgConn, arena.allocateUtf8String(query));
+            return (MemorySegment) execHandle.invokeExact(conn, arena.allocateUtf8String(command));
         }
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">More info</a>
      */
-    public MemorySegment exec(final MemorySegment pgConn, final MemorySegment query) throws Throwable {
-        return (MemorySegment) execHandle.invokeExact(pgConn, query);
+    public MemorySegment exec(final MemorySegment conn, final MemorySegment command) throws Throwable {
+        return (MemorySegment) execHandle.invokeExact(conn, command);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">More info</a>
      */
-    public MemorySegment prepare(final MemorySegment pgConn, final String statementName, final String query,
-                                 final int numberOfParameters) throws Throwable {
+    public MemorySegment prepare(final MemorySegment conn, final String stmtName, final String query, final int nParams)
+            throws Throwable {
 
         try (final var arena = Arena.ofConfined()) {
-            var sn = arena.allocateUtf8String(statementName);
+            var sn = arena.allocateUtf8String(stmtName);
             var q = arena.allocateUtf8String(query);
 
-            return (MemorySegment) prepareHandle.invokeExact(pgConn, sn, q, numberOfParameters, NULL);
+            return (MemorySegment) prepareHandle.invokeExact(conn, sn, q, nParams, NULL);
         }
     }
 
