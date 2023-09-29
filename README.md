@@ -51,7 +51,7 @@ Then add PQ dependency into your maven project:
 Then the library can be used as in:
 
 ```java
-import ir.jibit.pq.PQ;
+import ir.jibit.pq.PQX;
 
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
@@ -65,14 +65,14 @@ public final class Application {
         final var start = System.nanoTime();
         for (int i = 1; i <= 25; i++) {
             Executors.newVirtualThreadPerTaskExecutor().submit(() -> {
-                try (final var pq = new PQ(Path.of("/opt/homebrew/opt/libpq/lib/libpq.dylib"))) {
-                    final var pgConn = pq.connectDBOptional("postgresql://user:pass@localhost:5432/db").orElseThrow();
+                try (final var pqx = new PQX(Path.of("/opt/homebrew/opt/libpq/lib/libpq.dylib"))) {
+                    final var conn = pqx.connectDB("postgresql://user:pass@localhost:5432/db").orElseThrow();
                     for (int j = 1; j <= 10000000; j++) {
-                        pq.status(pgConn);
+                        pqx.status(conn);
                     }
 
                     latch.countDown();
-                    pq.finish(pgConn);
+                    pqx.finish(conn);
                 } catch (Throwable _) {
 
                 }
@@ -92,6 +92,5 @@ java -jar --enable-preview target/Application.jar
 ```
 
 This sample application creates 25 virtual threads, each thread creates a connection to postgres instance then tried to
-call db status function of native `libpq` C library 10 million times. ( 25 * 10,000,000 = 250,000,000 native function calls).
-
-In my personal m1 macbook air the whole process takes 832922208 ns (832 ms),
+call db status function of native `libpq` C library 10 million times. ( 25 * 10,000,000 = 250,000,000 native function
+calls). In my m1 macbook air, the whole process takes 832 ms.
