@@ -260,7 +260,7 @@ public final class PQ implements AutoCloseable {
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">More info</a>
      */
     public Optional<Integer> socketOptional(final MemorySegment conn) throws Throwable {
-        final var socket = (int) socketHandle.invokeExact(conn);
+        final var socket = socket(conn);
         if (socket > 0) {
             return Optional.of(socket);
         }
@@ -278,17 +278,26 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">More info</a>
      */
-    public MemorySegment exec(final MemorySegment conn, final String command) throws Throwable {
-        try (final var arena = Arena.ofConfined()) {
-            return (MemorySegment) execHandle.invokeExact(conn, arena.allocateUtf8String(command));
-        }
+    public MemorySegment exec(final MemorySegment conn, final MemorySegment command) throws Throwable {
+        return (MemorySegment) execHandle.invokeExact(conn, command);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">More info</a>
      */
-    public MemorySegment exec(final MemorySegment conn, final MemorySegment command) throws Throwable {
-        return (MemorySegment) execHandle.invokeExact(conn, command);
+    public MemorySegment exec(final MemorySegment conn, final String command) throws Throwable {
+        try (final var arena = Arena.ofConfined()) {
+            return exec(conn, arena.allocateUtf8String(command));
+        }
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">More info</a>
+     */
+    public MemorySegment prepare(final MemorySegment conn, final MemorySegment stmtName, final MemorySegment query,
+                                 final int nParams) throws Throwable {
+
+        return (MemorySegment) prepareHandle.invokeExact(conn, stmtName, query, nParams, NULL);
     }
 
     /**
@@ -298,10 +307,29 @@ public final class PQ implements AutoCloseable {
             throws Throwable {
 
         try (final var arena = Arena.ofConfined()) {
-            var sn = arena.allocateUtf8String(stmtName);
-            var q = arena.allocateUtf8String(query);
+            return prepare(conn, arena.allocateUtf8String(stmtName), arena.allocateUtf8String(query), nParams);
+        }
+    }
 
-            return (MemorySegment) prepareHandle.invokeExact(conn, sn, q, nParams, NULL);
+    /**
+     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">More info</a>
+     */
+    public MemorySegment execPrepared(final MemorySegment conn, final MemorySegment stmtName, final int nParams,
+                                      final MemorySegment paramValues, final MemorySegment paramLengths,
+                                      final MemorySegment paramFormats, final int resultFormat) throws Throwable {
+
+        return (MemorySegment) execPreparedHandle.invokeExact(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, resultFormat);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">More info</a>
+     */
+    public MemorySegment execPrepared(final MemorySegment conn, final String stmtName, final int nParams,
+                                      final MemorySegment paramValues, final MemorySegment paramLengths,
+                                      final MemorySegment paramFormats, final int resultFormat) throws Throwable {
+
+        try (final var arena = Arena.ofConfined()) {
+            return execPrepared(conn, arena.allocateUtf8String(stmtName), nParams, paramValues, paramLengths, paramFormats, resultFormat);
         }
     }
 
