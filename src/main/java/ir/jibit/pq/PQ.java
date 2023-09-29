@@ -8,9 +8,7 @@ import ir.jibit.pq.enums.PGTransactionStatusType;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
-import java.util.Optional;
 
-import static ir.jibit.pq.Layouts.*;
 import static java.lang.foreign.MemorySegment.NULL;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
@@ -22,7 +20,7 @@ import static java.lang.foreign.ValueLayout.JAVA_INT;
  *
  * @author Alireza Pourtaghi
  */
-public final class PQ implements AutoCloseable {
+public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * Shared or dynamic postgresql c library path.
@@ -106,22 +104,8 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNECTDB">More info</a>
      */
-    public MemorySegment connectDB(final String connInfo) throws Throwable {
-        try (final var arena = Arena.ofConfined()) {
-            return (MemorySegment) connectDBHandle.invokeExact(arena.allocateUtf8String(connInfo));
-        }
-    }
-
-    /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNECTDB">More info</a>
-     */
-    public Optional<MemorySegment> connectDBOptional(final String connInfo) throws Throwable {
-        final var pgConn = connectDB(connInfo);
-        if (!pgConn.equals(NULL)) {
-            return Optional.of(pgConn);
-        }
-
-        return Optional.empty();
+    public MemorySegment connectDB(final MemorySegment connInfo) throws Throwable {
+        return (MemorySegment) connectDBHandle.invokeExact(connInfo);
     }
 
     /**
@@ -129,18 +113,6 @@ public final class PQ implements AutoCloseable {
      */
     public MemorySegment connInfo(final MemorySegment conn) throws Throwable {
         return (MemorySegment) connInfoHandle.invokeExact(conn);
-    }
-
-    /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">More info</a>
-     */
-    public Optional<MemorySegment> connInfoOptional(final MemorySegment conn) throws Throwable {
-        final var connInfo = connInfo(conn);
-        if (!connInfo.equals(NULL)) {
-            return Optional.of(connInfo);
-        }
-
-        return Optional.empty();
     }
 
     /**
@@ -160,21 +132,19 @@ public final class PQ implements AutoCloseable {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQPING">More info</a>
      */
-    public PGPing ping(final String connInfo) throws Throwable {
-        try (final var arena = Arena.ofConfined()) {
-            switch ((int) pingHandle.invokeExact(arena.allocateUtf8String(connInfo))) {
-                case 0:
-                    return PGPing.PQPING_OK;
-                case 1:
-                    return PGPing.PQPING_REJECT;
-                case 2:
-                    return PGPing.PQPING_NO_RESPONSE;
-                case 3:
-                    return PGPing.PQPING_NO_ATTEMPT;
+    public PGPing ping(final MemorySegment connInfo) throws Throwable {
+        switch ((int) pingHandle.invokeExact(connInfo)) {
+            case 0:
+                return PGPing.PQPING_OK;
+            case 1:
+                return PGPing.PQPING_REJECT;
+            case 2:
+                return PGPing.PQPING_NO_RESPONSE;
+            case 3:
+                return PGPing.PQPING_NO_ATTEMPT;
 
-                default:
-                    return PGPing.UNKNOWN;
-            }
+            default:
+                return PGPing.UNKNOWN;
         }
     }
 
@@ -257,18 +227,6 @@ public final class PQ implements AutoCloseable {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">More info</a>
-     */
-    public Optional<Integer> socketOptional(final MemorySegment conn) throws Throwable {
-        final var socket = socket(conn);
-        if (socket > 0) {
-            return Optional.of(socket);
-        }
-
-        return Optional.empty();
-    }
-
-    /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQBACKENDPID">More info</a>
      */
     public int backendPid(final MemorySegment conn) throws Throwable {
@@ -283,32 +241,12 @@ public final class PQ implements AutoCloseable {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">More info</a>
-     */
-    public MemorySegment exec(final MemorySegment conn, final String command) throws Throwable {
-        try (final var arena = Arena.ofConfined()) {
-            return exec(conn, arena.allocateUtf8String(command));
-        }
-    }
-
-    /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">More info</a>
      */
     public MemorySegment prepare(final MemorySegment conn, final MemorySegment stmtName, final MemorySegment query,
                                  final int nParams) throws Throwable {
 
         return (MemorySegment) prepareHandle.invokeExact(conn, stmtName, query, nParams, NULL);
-    }
-
-    /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">More info</a>
-     */
-    public MemorySegment prepare(final MemorySegment conn, final String stmtName, final String query, final int nParams)
-            throws Throwable {
-
-        try (final var arena = Arena.ofConfined()) {
-            return prepare(conn, arena.allocateUtf8String(stmtName), arena.allocateUtf8String(query), nParams);
-        }
     }
 
     /**
@@ -319,18 +257,6 @@ public final class PQ implements AutoCloseable {
                                       final MemorySegment paramFormats, final int resultFormat) throws Throwable {
 
         return (MemorySegment) execPreparedHandle.invokeExact(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, resultFormat);
-    }
-
-    /**
-     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">More info</a>
-     */
-    public MemorySegment execPrepared(final MemorySegment conn, final String stmtName, final int nParams,
-                                      final MemorySegment paramValues, final MemorySegment paramLengths,
-                                      final MemorySegment paramFormats, final int resultFormat) throws Throwable {
-
-        try (final var arena = Arena.ofConfined()) {
-            return execPrepared(conn, arena.allocateUtf8String(stmtName), nParams, paramValues, paramLengths, paramFormats, resultFormat);
-        }
     }
 
     /**
@@ -376,48 +302,10 @@ public final class PQ implements AutoCloseable {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
-     */
-    public String resultErrorMessageString(final MemorySegment pgResult) throws Throwable {
-        return resultErrorMessage(pgResult).reinterpret(1024).getUtf8String(0);
-    }
-
-    /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCLEAR">More info</a>
      */
     public void clear(final MemorySegment pgResult) throws Throwable {
         clearHandle.invokeExact(pgResult);
-    }
-
-    /**
-     * Prints information about a connection to postgresql server.
-     *
-     * @param pgConn memory segment instance returned by connecting to postgresql server
-     * @throws Throwable in case of errors
-     */
-    public void printConnInfo(final MemorySegment pgConn) throws Throwable {
-        final var ptr = connInfoOptional(pgConn).orElseThrow();
-
-        try {
-            for (int i = 0; ; i++) {
-                final var rPtr = ptr.reinterpret(PQConnInfoOption.byteSize() + PQConnInfoOption.byteSize() * i);
-                final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
-                final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
-
-                if (keywordPtr.equals(NULL)) {
-                    break;
-                } else {
-                    System.out.print(keywordPtr.reinterpret(256).getUtf8String(0) + ": ");
-                    if (!valPtr.equals(NULL)) {
-                        System.out.print(valPtr.reinterpret(256).getUtf8String(0));
-                    }
-
-                    System.out.println();
-                }
-            }
-        } finally {
-            connInfoFree(ptr);
-        }
     }
 
     @Override
