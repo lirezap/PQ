@@ -1,4 +1,4 @@
-package ir.jibit.pq;
+package ir.jibit.pq.layouts;
 
 import java.lang.foreign.SequenceLayout;
 import java.lang.foreign.StructLayout;
@@ -11,11 +11,11 @@ import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 
 /**
- * Postgresql C library definitions as memory layouts.
+ * Postgresql C library PQconninfoOption definition as memory layout.
  *
  * @author Alireza Pourtaghi
  */
-public final class Layouts {
+public final class PQConnInfoOption {
 
     public static final StructLayout PQConnInfoOption = structLayout(
             ADDRESS.withName("keyword"),

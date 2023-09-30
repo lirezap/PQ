@@ -102,35 +102,35 @@ public sealed class PQ implements AutoCloseable permits PQX {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNECTDB">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNECTDB">See official doc for more information.</a>
      */
     public MemorySegment connectDB(final MemorySegment connInfo) throws Throwable {
         return (MemorySegment) connectDBHandle.invokeExact(connInfo);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">See official doc for more information.</a>
      */
     public MemorySegment connInfo(final MemorySegment conn) throws Throwable {
         return (MemorySegment) connInfoHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQFINISH">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQFINISH">See official doc for more information.</a>
      */
     public void finish(final MemorySegment conn) throws Throwable {
         finishHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQRESET">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQRESET">See official doc for more information.</a>
      */
     public void reset(final MemorySegment conn) throws Throwable {
         resetHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQPING">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQPING">See official doc for more information.</a>
      */
     public PGPing ping(final MemorySegment connInfo) throws Throwable {
         switch ((int) pingHandle.invokeExact(connInfo)) {
@@ -149,21 +149,21 @@ public sealed class PQ implements AutoCloseable permits PQX {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-misc.html#LIBPQ-PQCONNINFOFREE">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-misc.html#LIBPQ-PQCONNINFOFREE">See official doc for more information.</a>
      */
     public void connInfoFree(final MemorySegment connOptions) throws Throwable {
         connInfoFreeHandle.invokeExact(connOptions);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQDB">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQDB">See official doc for more information.</a>
      */
     public MemorySegment db(final MemorySegment conn) throws Throwable {
         return (MemorySegment) dbHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSTATUS">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSTATUS">See official doc for more information.</a>
      */
     public ConnStatusType status(final MemorySegment conn) throws Throwable {
         switch ((int) statusHandle.invokeExact(conn)) {
@@ -178,7 +178,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQTRANSACTIONSTATUS">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQTRANSACTIONSTATUS">See official doc for more information.</a>
      */
     public PGTransactionStatusType transactionStatus(final MemorySegment conn) throws Throwable {
         switch ((int) transactionStatusHandle.invokeExact(conn)) {
@@ -199,49 +199,49 @@ public sealed class PQ implements AutoCloseable permits PQX {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQPROTOCOLVERSION">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQPROTOCOLVERSION">See official doc for more information.</a>
      */
     public int protocolVersion(final MemorySegment conn) throws Throwable {
         return (int) protocolVersionHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSERVERVERSION">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSERVERVERSION">See official doc for more information.</a>
      */
     public int serverVersion(final MemorySegment conn) throws Throwable {
         return (int) serverVersionHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQERRORMESSAGE">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQERRORMESSAGE">See official doc for more information.</a>
      */
     public MemorySegment errorMessage(final MemorySegment conn) throws Throwable {
         return (MemorySegment) errorMessageHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">See official doc for more information.</a>
      */
     public int socket(final MemorySegment conn) throws Throwable {
         return (int) socketHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQBACKENDPID">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQBACKENDPID">See official doc for more information.</a>
      */
     public int backendPid(final MemorySegment conn) throws Throwable {
         return (int) backendPidHandle.invokeExact(conn);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">See official doc for more information.</a>
      */
     public MemorySegment exec(final MemorySegment conn, final MemorySegment command) throws Throwable {
         return (MemorySegment) execHandle.invokeExact(conn, command);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">See official doc for more information.</a>
      */
     public MemorySegment prepare(final MemorySegment conn, final MemorySegment stmtName, final MemorySegment query,
                                  final int nParams) throws Throwable {
@@ -250,7 +250,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">More info</a>
+     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">See official doc for more information.</a>
      */
     public MemorySegment execPrepared(final MemorySegment conn, final MemorySegment stmtName, final int nParams,
                                       final MemorySegment paramValues, final MemorySegment paramLengths,
@@ -260,7 +260,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTSTATUS">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTSTATUS">See official doc for more information.</a>
      */
     public ExecStatusType resultStatus(final MemorySegment pgResult) throws Throwable {
         switch ((int) resultStatusHandle.invokeExact(pgResult)) {
@@ -295,14 +295,14 @@ public sealed class PQ implements AutoCloseable permits PQX {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">See official doc for more information.</a>
      */
     public MemorySegment resultErrorMessage(final MemorySegment pgResult) throws Throwable {
         return (MemorySegment) resultErrorMessageHandle.invokeExact(pgResult);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCLEAR">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCLEAR">See official doc for more information.</a>
      */
     public void clear(final MemorySegment pgResult) throws Throwable {
         clearHandle.invokeExact(pgResult);

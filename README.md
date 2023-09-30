@@ -6,9 +6,9 @@ easily by using these low level functions.
 
 ---
 
-#### Build Project
+#### Build Library
 
-First of all you need to clone the project using:
+First of all you need to clone the library using:
 
 ```markdown
 git clone git@github.com:lirezap/PQ.git
@@ -93,4 +93,4 @@ java -jar --enable-preview target/Application.jar
 
 This sample application creates 25 virtual threads, each thread creates a connection to postgres instance then tried to
 call db status function of native `libpq` C library 10 million times. ( 25 * 10,000,000 = 250,000,000 native function
-calls). In my m1 macbook air, the whole process takes 832 ms.
+calls). In m1 macbook air, the whole process takes 800-850 ms.

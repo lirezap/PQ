@@ -7,7 +7,8 @@ import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static ir.jibit.pq.Layouts.*;
+import static ir.jibit.pq.layouts.PQConnInfoOption.*;
+import static ir.jibit.pq.layouts.PreparedStatement.*;
 import static java.lang.foreign.MemorySegment.NULL;
 
 /**
@@ -22,7 +23,7 @@ public final class PQX extends PQ {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNECTDB">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNECTDB">See official doc for more information.</a>
      */
     public Optional<MemorySegment> connectDB(final String connInfo) throws Throwable {
         try (final var arena = Arena.ofConfined()) {
@@ -36,7 +37,7 @@ public final class PQX extends PQ {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">See official doc for more information.</a>
      */
     public Optional<MemorySegment> connInfoOptional(final MemorySegment conn) throws Throwable {
         final var connInfo = connInfo(conn);
@@ -48,7 +49,7 @@ public final class PQX extends PQ {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQPING">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQPING">See official doc for more information.</a>
      */
     public PGPing ping(final String connInfo) throws Throwable {
         try (final var arena = Arena.ofConfined()) {
@@ -57,7 +58,7 @@ public final class PQX extends PQ {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">See official doc for more information.</a>
      */
     public Optional<Integer> socketOptional(final MemorySegment conn) throws Throwable {
         final var socket = socket(conn);
@@ -69,7 +70,7 @@ public final class PQX extends PQ {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">See official doc for more information.</a>
      */
     public MemorySegment exec(final MemorySegment conn, final String command) throws Throwable {
         try (final var arena = Arena.ofConfined()) {
@@ -78,7 +79,7 @@ public final class PQX extends PQ {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">See official doc for more information.</a>
      */
     public MemorySegment prepare(final MemorySegment conn, final String stmtName, final String query,
                                  final int nParams) throws Throwable {
@@ -89,43 +90,45 @@ public final class PQX extends PQ {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">More info</a>
+     * Executes a prepared statement by using pointers provided as struct fields in parameter.
+     *
+     * @param conn                 postgresql database connection
+     * @param preparedStatementPtr pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @return pointer to a postgresql result model in text format
      */
-    public MemorySegment execPrepared(final MemorySegment conn, final String stmtName, final int nParams,
-                                      final MemorySegment paramValues, final MemorySegment paramLengths,
-                                      final MemorySegment paramFormats, final int resultFormat) throws Throwable {
+    public MemorySegment execPreparedTextResult(final MemorySegment conn,
+                                                final MemorySegment preparedStatementPtr) throws Throwable {
 
-        try (final var arena = Arena.ofConfined()) {
-            return execPrepared(conn, arena.allocateUtf8String(stmtName), nParams, paramValues, paramLengths, paramFormats, resultFormat);
-        }
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatementPtr);
+        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatementPtr);
+        final var paramValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatementPtr);
+        final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatementPtr);
+        final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatementPtr);
+
+        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 0);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">More info</a>
+     * Executes a prepared statement by using pointers provided as struct fields in parameter.
+     *
+     * @param conn                 postgresql database connection
+     * @param preparedStatementPtr pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @return pointer to a postgresql result model in binary format
      */
-    public MemorySegment execPreparedTextResult(final MemorySegment conn, final String stmtName, final int nParams,
-                                                final MemorySegment paramValues, final MemorySegment paramLengths,
-                                                final MemorySegment paramFormats) throws Throwable {
+    public MemorySegment execPreparedBinaryResult(final MemorySegment conn,
+                                                  final MemorySegment preparedStatementPtr) throws Throwable {
 
-        try (final var arena = Arena.ofConfined()) {
-            return execPrepared(conn, arena.allocateUtf8String(stmtName), nParams, paramValues, paramLengths, paramFormats, 0);
-        }
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatementPtr);
+        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatementPtr);
+        final var paramValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatementPtr);
+        final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatementPtr);
+        final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatementPtr);
+
+        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 1);
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">More info</a>
-     */
-    public MemorySegment execPreparedBinaryResult(final MemorySegment conn, final String stmtName, final int nParams,
-                                                  final MemorySegment paramValues, final MemorySegment paramLengths,
-                                                  final MemorySegment paramFormats) throws Throwable {
-
-        try (final var arena = Arena.ofConfined()) {
-            return execPrepared(conn, arena.allocateUtf8String(stmtName), nParams, paramValues, paramLengths, paramFormats, 1);
-        }
-    }
-
-    /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">More info</a>
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">See official doc for more information.</a>
      */
     public String resultErrorMessageString(final MemorySegment pgResult) throws Throwable {
         return resultErrorMessage(pgResult).reinterpret(1024).getUtf8String(0);
