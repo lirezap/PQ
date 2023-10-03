@@ -147,6 +147,20 @@ public final class PQX extends PQ {
     }
 
     /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNUMBER">See official doc for more information.</a>
+     */
+    public Optional<Integer> fNumberOptional(final MemorySegment res, final String columnName) throws Throwable {
+        try (final var arena = Arena.ofConfined()) {
+            final var number = fNumber(res, arena.allocateUtf8String(columnName));
+            if (number != -1) {
+                return Optional.of(number);
+            }
+
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Prints information about a connection to postgresql server.
      *
      * @param conn memory segment instance returned by connecting to postgresql server
