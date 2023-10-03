@@ -71,6 +71,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle nFieldsHandle;
     private final MethodHandle fNameHandle;
     private final MethodHandle fNumberHandle;
+    private final MethodHandle fFormatHandle;
 
     public PQ(final Path path) {
         this.path = path;
@@ -107,6 +108,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.nFieldsHandle = linker.downcallHandle(lib.find(FUNCTION.PQnfields.name()).orElseThrow(), FUNCTION.PQnfields.fd);
         this.fNameHandle = linker.downcallHandle(lib.find(FUNCTION.PQfname.name()).orElseThrow(), FUNCTION.PQfname.fd);
         this.fNumberHandle = linker.downcallHandle(lib.find(FUNCTION.PQfnumber.name()).orElseThrow(), FUNCTION.PQfnumber.fd);
+        this.fFormatHandle = linker.downcallHandle(lib.find(FUNCTION.PQfformat.name()).orElseThrow(), FUNCTION.PQfformat.fd);
     }
 
     /**
@@ -344,6 +346,13 @@ public sealed class PQ implements AutoCloseable permits PQX {
         return (int) fNumberHandle.invokeExact(res, columnName);
     }
 
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFFORMAT">See official doc for more information.</a>
+     */
+    public int fFormat(final MemorySegment res, final int columnNumber) throws Throwable {
+        return (int) fFormatHandle.invokeExact(res, columnNumber);
+    }
+
     @Override
     public void close() throws Exception {
         memory.close();
@@ -384,7 +393,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQntuples(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
         PQnfields(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
         PQfname(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT)),
-        PQfnumber(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
+        PQfnumber(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
+        PQfformat(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT));
 
         public final FunctionDescriptor fd;
 
