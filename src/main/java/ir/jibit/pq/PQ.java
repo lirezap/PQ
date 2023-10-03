@@ -70,6 +70,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle nTuplesHandle;
     private final MethodHandle nFieldsHandle;
     private final MethodHandle fNameHandle;
+    private final MethodHandle fNumberHandle;
 
     public PQ(final Path path) {
         this.path = path;
@@ -105,6 +106,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.nTuplesHandle = linker.downcallHandle(lib.find(FUNCTION.PQntuples.name()).orElseThrow(), FUNCTION.PQntuples.fd);
         this.nFieldsHandle = linker.downcallHandle(lib.find(FUNCTION.PQnfields.name()).orElseThrow(), FUNCTION.PQnfields.fd);
         this.fNameHandle = linker.downcallHandle(lib.find(FUNCTION.PQfname.name()).orElseThrow(), FUNCTION.PQfname.fd);
+        this.fNumberHandle = linker.downcallHandle(lib.find(FUNCTION.PQfnumber.name()).orElseThrow(), FUNCTION.PQfnumber.fd);
     }
 
     /**
@@ -331,8 +333,15 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNAME">See official doc for more information.</a>
      */
-    public MemorySegment fName(final MemorySegment res, int columnNumber) throws Throwable {
+    public MemorySegment fName(final MemorySegment res, final int columnNumber) throws Throwable {
         return (MemorySegment) fNameHandle.invokeExact(res, columnNumber);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNUMBER">See official doc for more information.</a>
+     */
+    public int fNumber(final MemorySegment res, final MemorySegment columnName) throws Throwable {
+        return (int) fNumberHandle.invokeExact(res, columnName);
     }
 
     @Override
@@ -374,7 +383,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQclear(FunctionDescriptor.ofVoid(ADDRESS)),
         PQntuples(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
         PQnfields(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQfname(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT));
+        PQfname(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT)),
+        PQfnumber(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
 
         public final FunctionDescriptor fd;
 
