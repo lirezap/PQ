@@ -67,6 +67,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle resultStatusHandle;
     private final MethodHandle resultErrorMessageHandle;
     private final MethodHandle clearHandle;
+    private final MethodHandle nTuplesHandle;
+    private final MethodHandle nFieldsHandle;
+    private final MethodHandle fNameHandle;
 
     public PQ(final Path path) {
         this.path = path;
@@ -99,6 +102,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.resultStatusHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultStatus.name()).orElseThrow(), FUNCTION.PQresultStatus.fd);
         this.resultErrorMessageHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultErrorMessage.name()).orElseThrow(), FUNCTION.PQresultErrorMessage.fd);
         this.clearHandle = linker.downcallHandle(lib.find(FUNCTION.PQclear.name()).orElseThrow(), FUNCTION.PQclear.fd);
+        this.nTuplesHandle = linker.downcallHandle(lib.find(FUNCTION.PQntuples.name()).orElseThrow(), FUNCTION.PQntuples.fd);
+        this.nFieldsHandle = linker.downcallHandle(lib.find(FUNCTION.PQnfields.name()).orElseThrow(), FUNCTION.PQnfields.fd);
+        this.fNameHandle = linker.downcallHandle(lib.find(FUNCTION.PQfname.name()).orElseThrow(), FUNCTION.PQfname.fd);
     }
 
     /**
@@ -262,8 +268,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTSTATUS">See official doc for more information.</a>
      */
-    public ExecStatusType resultStatus(final MemorySegment pgResult) throws Throwable {
-        switch ((int) resultStatusHandle.invokeExact(pgResult)) {
+    public ExecStatusType resultStatus(final MemorySegment res) throws Throwable {
+        switch ((int) resultStatusHandle.invokeExact(res)) {
             case 0:
                 return ExecStatusType.PGRES_EMPTY_QUERY;
             case 1:
@@ -297,15 +303,36 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">See official doc for more information.</a>
      */
-    public MemorySegment resultErrorMessage(final MemorySegment pgResult) throws Throwable {
-        return (MemorySegment) resultErrorMessageHandle.invokeExact(pgResult);
+    public MemorySegment resultErrorMessage(final MemorySegment res) throws Throwable {
+        return (MemorySegment) resultErrorMessageHandle.invokeExact(res);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCLEAR">See official doc for more information.</a>
      */
-    public void clear(final MemorySegment pgResult) throws Throwable {
-        clearHandle.invokeExact(pgResult);
+    public void clear(final MemorySegment res) throws Throwable {
+        clearHandle.invokeExact(res);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQNTUPLES">See official doc for more information.</a>
+     */
+    public int nTuples(final MemorySegment res) throws Throwable {
+        return (int) nTuplesHandle.invokeExact(res);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQNFIELDS">See official doc for more information.</a>
+     */
+    public int nFields(final MemorySegment res) throws Throwable {
+        return (int) nFieldsHandle.invokeExact(res);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNAME">See official doc for more information.</a>
+     */
+    public MemorySegment fName(final MemorySegment res, int columnNumber) throws Throwable {
+        return (MemorySegment) fNameHandle.invokeExact(res, columnNumber);
     }
 
     @Override
@@ -344,7 +371,10 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQresultErrorMessage(FunctionDescriptor.of(ADDRESS, ADDRESS)),
         PQprepare(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
         PQexecPrepared(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
-        PQclear(FunctionDescriptor.ofVoid(ADDRESS));
+        PQclear(FunctionDescriptor.ofVoid(ADDRESS)),
+        PQntuples(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
+        PQnfields(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
+        PQfname(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT));
 
         public final FunctionDescriptor fd;
 

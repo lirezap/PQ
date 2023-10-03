@@ -92,18 +92,18 @@ public final class PQX extends PQ {
     /**
      * Executes a prepared statement by using pointers provided as struct fields in parameter.
      *
-     * @param conn                 postgresql database connection
-     * @param preparedStatementPtr pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @param conn              postgresql database connection
+     * @param preparedStatement pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
      * @return pointer to a postgresql result model in text format
      */
     public MemorySegment execPreparedTextResult(final MemorySegment conn,
-                                                final MemorySegment preparedStatementPtr) throws Throwable {
+                                                final MemorySegment preparedStatement) throws Throwable {
 
-        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatementPtr);
-        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatementPtr);
-        final var paramValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatementPtr);
-        final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatementPtr);
-        final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatementPtr);
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatement);
+        final var paramValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatement);
+        final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
+        final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
         return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 0);
     }
@@ -111,18 +111,18 @@ public final class PQX extends PQ {
     /**
      * Executes a prepared statement by using pointers provided as struct fields in parameter.
      *
-     * @param conn                 postgresql database connection
-     * @param preparedStatementPtr pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @param conn              postgresql database connection
+     * @param preparedStatement pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
      * @return pointer to a postgresql result model in binary format
      */
     public MemorySegment execPreparedBinaryResult(final MemorySegment conn,
-                                                  final MemorySegment preparedStatementPtr) throws Throwable {
+                                                  final MemorySegment preparedStatement) throws Throwable {
 
-        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatementPtr);
-        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatementPtr);
-        final var paramValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatementPtr);
-        final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatementPtr);
-        final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatementPtr);
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatement);
+        final var paramValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatement);
+        final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
+        final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
         return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 1);
     }
@@ -130,8 +130,20 @@ public final class PQX extends PQ {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">See official doc for more information.</a>
      */
-    public String resultErrorMessageString(final MemorySegment pgResult) throws Throwable {
-        return resultErrorMessage(pgResult).reinterpret(1024).getUtf8String(0);
+    public String resultErrorMessageString(final MemorySegment res) throws Throwable {
+        return resultErrorMessage(res).reinterpret(1024).getUtf8String(0);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNAME">See official doc for more information.</a>
+     */
+    public Optional<String> fNameOptionalString(final MemorySegment res, int columnNumber) throws Throwable {
+        final var name = fName(res, columnNumber);
+        if (!name.equals(NULL)) {
+            return Optional.of(name.reinterpret(1024).getUtf8String(0));
+        }
+
+        return Optional.empty();
     }
 
     /**
