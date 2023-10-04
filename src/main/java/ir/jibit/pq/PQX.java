@@ -81,12 +81,12 @@ public final class PQX extends PQ {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">See official doc for more information.</a>
      */
-    public MemorySegment prepare(final MemorySegment conn, final String stmtName, final String query,
-                                 final int nParams) throws Throwable {
+    public MemorySegment prepare(final MemorySegment conn, final MemorySegment preparedStatement) throws Throwable {
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var query = (MemorySegment) PreparedStatement_query_varHandle.get(preparedStatement);
+        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatement);
 
-        try (final var arena = Arena.ofConfined()) {
-            return prepare(conn, arena.allocateUtf8String(stmtName), arena.allocateUtf8String(query), nParams);
-        }
+        return prepare(conn, stmtName, query, nParams);
     }
 
     /**
