@@ -1,9 +1,6 @@
 package ir.jibit.pq;
 
-import ir.jibit.pq.enums.ConnStatusType;
-import ir.jibit.pq.enums.ExecStatusType;
-import ir.jibit.pq.enums.PGPing;
-import ir.jibit.pq.enums.PGTransactionStatusType;
+import ir.jibit.pq.enums.*;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -72,6 +69,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle fNameHandle;
     private final MethodHandle fNumberHandle;
     private final MethodHandle fFormatHandle;
+    private final MethodHandle fTypeHandle;
 
     public PQ(final Path path) {
         this.path = path;
@@ -109,6 +107,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.fNameHandle = linker.downcallHandle(lib.find(FUNCTION.PQfname.name()).orElseThrow(), FUNCTION.PQfname.fd);
         this.fNumberHandle = linker.downcallHandle(lib.find(FUNCTION.PQfnumber.name()).orElseThrow(), FUNCTION.PQfnumber.fd);
         this.fFormatHandle = linker.downcallHandle(lib.find(FUNCTION.PQfformat.name()).orElseThrow(), FUNCTION.PQfformat.fd);
+        this.fTypeHandle = linker.downcallHandle(lib.find(FUNCTION.PQftype.name()).orElseThrow(), FUNCTION.PQftype.fd);
     }
 
     /**
@@ -349,8 +348,23 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFFORMAT">See official doc for more information.</a>
      */
-    public int fFormat(final MemorySegment res, final int columnNumber) throws Throwable {
-        return (int) fFormatHandle.invokeExact(res, columnNumber);
+    public FieldFormat fFormat(final MemorySegment res, final int columnNumber) throws Throwable {
+        switch ((int) fFormatHandle.invokeExact(res, columnNumber)) {
+            case 0:
+                return FieldFormat.TEXT;
+            case 1:
+                return FieldFormat.BINARY;
+
+            default:
+                return FieldFormat.UNKNOWN;
+        }
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFTYPE">See official doc for more information.</a>
+     */
+    public int fType(final MemorySegment res, final int columnNumber) throws Throwable {
+        return (int) fTypeHandle.invokeExact(res, columnNumber);
     }
 
     @Override
@@ -394,7 +408,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQnfields(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
         PQfname(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT)),
         PQfnumber(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
-        PQfformat(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT));
+        PQfformat(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
+        PQftype(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT));
 
         public final FunctionDescriptor fd;
 
