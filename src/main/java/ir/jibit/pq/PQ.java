@@ -70,6 +70,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle fNumberHandle;
     private final MethodHandle fFormatHandle;
     private final MethodHandle fTypeHandle;
+    private final MethodHandle fModHandle;
 
     public PQ(final Path path) {
         this.path = path;
@@ -108,6 +109,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.fNumberHandle = linker.downcallHandle(lib.find(FUNCTION.PQfnumber.name()).orElseThrow(), FUNCTION.PQfnumber.fd);
         this.fFormatHandle = linker.downcallHandle(lib.find(FUNCTION.PQfformat.name()).orElseThrow(), FUNCTION.PQfformat.fd);
         this.fTypeHandle = linker.downcallHandle(lib.find(FUNCTION.PQftype.name()).orElseThrow(), FUNCTION.PQftype.fd);
+        this.fModHandle = linker.downcallHandle(lib.find(FUNCTION.PQfmod.name()).orElseThrow(), FUNCTION.PQfmod.fd);
     }
 
     /**
@@ -364,7 +366,15 @@ public sealed class PQ implements AutoCloseable permits PQX {
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFTYPE">See official doc for more information.</a>
      */
     public int fType(final MemorySegment res, final int columnNumber) throws Throwable {
+        // TODO: We need to return enum type here instead of int.
         return (int) fTypeHandle.invokeExact(res, columnNumber);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFMOD">See official doc for more information.</a>
+     */
+    public int fMod(final MemorySegment res, final int columnNumber) throws Throwable {
+        return (int) fModHandle.invokeExact(res, columnNumber);
     }
 
     @Override
@@ -409,7 +419,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQfname(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT)),
         PQfnumber(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
         PQfformat(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
-        PQftype(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT));
+        PQftype(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
+        PQfmod(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT));
 
         public final FunctionDescriptor fd;
 
