@@ -73,6 +73,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle fModHandle;
     private final MethodHandle getValueHandle;
     private final MethodHandle getIsNullHandle;
+    private final MethodHandle getLengthHandle;
 
     public PQ(final Path path) {
         this.path = path;
@@ -114,6 +115,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.fModHandle = linker.downcallHandle(lib.find(FUNCTION.PQfmod.name()).orElseThrow(), FUNCTION.PQfmod.fd);
         this.getValueHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetvalue.name()).orElseThrow(), FUNCTION.PQgetvalue.fd);
         this.getIsNullHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetisnull.name()).orElseThrow(), FUNCTION.PQgetisnull.fd);
+        this.getLengthHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetlength.name()).orElseThrow(), FUNCTION.PQgetlength.fd);
     }
 
     /**
@@ -400,6 +402,13 @@ public sealed class PQ implements AutoCloseable permits PQX {
         }
     }
 
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQGETLENGTH">See official doc for more information.</a>
+     */
+    public int getLength(final MemorySegment res, final int rowNumber, final int columnNumber) throws Throwable {
+        return (int) getLengthHandle.invokeExact(res, rowNumber, columnNumber);
+    }
+
     @Override
     public void close() throws Exception {
         memory.close();
@@ -445,7 +454,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQftype(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
         PQfmod(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
         PQgetvalue(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT)),
-        PQgetisnull(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT));
+        PQgetisnull(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
+        PQgetlength(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT));
 
         public final FunctionDescriptor fd;
 
