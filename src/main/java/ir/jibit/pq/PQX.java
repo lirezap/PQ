@@ -161,6 +161,43 @@ public final class PQX extends PQ {
     }
 
     /**
+     * Gets the value of a provided connection option keyword.
+     *
+     * @param conn    memory segment instance returned by connecting to postgresql server
+     * @param keyword keyword to search
+     * @return optional value associated to provided keyword
+     * @throws Throwable in case of errors
+     */
+    public Optional<String> getConnectionOptionValue(final MemorySegment conn, final String keyword) throws Throwable {
+        final var ptr = connInfoOptional(conn).orElseThrow();
+
+        try {
+            for (int i = 0; ; i++) {
+                final var rPtr = ptr.reinterpret(PQConnInfoOption.byteSize() + PQConnInfoOption.byteSize() * i);
+                final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
+
+                if (!keywordPtr.equals(NULL)) {
+                    if (keywordPtr.reinterpret(256).getUtf8String(0).equals(keyword)) {
+                        final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
+                        if (!valPtr.equals(NULL)) {
+                            // Found keyword and has value.
+                            return Optional.of(valPtr.reinterpret(256).getUtf8String(0));
+                        } else {
+                            // Found keyword but its value is null.
+                            return Optional.empty();
+                        }
+                    }
+                } else {
+                    // We are at the end of the array and could not find keyword!
+                    return Optional.empty();
+                }
+            }
+        } finally {
+            connInfoFree(ptr);
+        }
+    }
+
+    /**
      * Prints information about a connection to postgresql server.
      *
      * @param conn memory segment instance returned by connecting to postgresql server
