@@ -44,43 +44,53 @@ Then add PQ dependency into your maven project:
 <dependency>
     <groupId>ir.jibit</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.6</version>
+    <version>0.0.10</version>
 </dependency>
 ```
 
 Then the library can be used as in:
 
 ```java
-import ir.jibit.pq.PQX;
+package ir.jibit.Application;
 
+import ir.jibit.pq.PQX;
+import ir.jibit.pq.enums.ConnStatusType;
+import ir.jibit.pq.enums.ExecStatusType;
+import ir.jibit.pq.layouts.PreparedStatement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.foreign.Arena;
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 
 public final class Application {
+    private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
     public static void main(final String[] args) throws Throwable {
-        final var latch = new CountDownLatch(25);
+        try (final var pqx = new PQX(Path.of("/opt/homebrew/opt/libpq/lib/libpq.dylib")); final var arena = Arena.ofConfined()) {
+            var conn = pqx.connectDB("postgresql://user:pass@localhost:5432/db").orElseThrow();
+            if (pqx.status(conn) != ConnStatusType.CONNECTION_OK) {
+                logger.error("Could not connect to postgresql instance!");
+            } else {
+                var ps = PreparedStatement.create(arena);
+                PreparedStatement.setStmtName(arena, ps, "insertEvent");
+                PreparedStatement.setQuery(arena, ps, "insert into event (type, metadata, entity_table, ts) values ($1, $2, $3, now());");
+                PreparedStatement.addTextValue(arena, ps, "TYPE"); // for $1
+                PreparedStatement.addTextValue(arena, ps, "Example metadata!"); // for $2
+                PreparedStatement.addTextValue(arena, ps, "event"); // // for $3
+                pqx.prepare(conn, ps);
 
-        final var start = System.nanoTime();
-        for (int i = 1; i <= 25; i++) {
-            Executors.newVirtualThreadPerTaskExecutor().submit(() -> {
-                try (final var pqx = new PQX(Path.of("/opt/homebrew/opt/libpq/lib/libpq.dylib"))) {
-                    final var conn = pqx.connectDB("postgresql://user:pass@localhost:5432/db").orElseThrow();
-                    for (int j = 1; j <= 10000000; j++) {
-                        pqx.status(conn);
-                    }
-
-                    latch.countDown();
-                    pqx.finish(conn);
-                } catch (Throwable _) {
-
+                var res = pqx.execPreparedBinaryResult(conn, ps);
+                if (!pqx.resultStatus(res).equals(ExecStatusType.PGRES_COMMAND_OK)) {
+                    logger.error("Could not execute command!");
+                } else {
+                    logger.info("Rows affected: {}", pqx.cmdTuplesInt(res));
                 }
-            });
-        }
 
-        latch.await();
-        System.out.println(System.nanoTime() - start);
+                pqx.clear(res); // Clear result pointer.
+                pqx.finish(conn); // Finish with connection.
+            }
+        }
     }
 }
 ```
@@ -90,7 +100,3 @@ To run the project you must provide `--enable-preview` option, like:
 ```text
 java -jar --enable-preview target/Application.jar
 ```
-
-This sample application creates 25 virtual threads, each thread creates a connection to postgres instance then tried to
-call db status function of native `libpq` C library 10 million times. ( 25 * 10,000,000 = 250,000,000 native function
-calls). In m1 macbook air, the whole process takes 800-850 ms.

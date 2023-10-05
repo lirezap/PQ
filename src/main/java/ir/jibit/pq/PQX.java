@@ -150,7 +150,7 @@ public final class PQX extends PQ {
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">See official doc for more information.</a>
      */
     public String resultErrorMessageString(final MemorySegment res) throws Throwable {
-        return resultErrorMessage(res).reinterpret(1024).getUtf8String(0);
+        return resultErrorMessage(res).reinterpret(256).getUtf8String(0);
     }
 
     /**
@@ -159,7 +159,7 @@ public final class PQX extends PQ {
     public Optional<String> fNameOptionalString(final MemorySegment res, int columnNumber) throws Throwable {
         final var name = fName(res, columnNumber);
         if (!name.equals(NULL)) {
-            return Optional.of(name.reinterpret(1024).getUtf8String(0));
+            return Optional.of(name.reinterpret(64).getUtf8String(0));
         }
 
         return Optional.empty();
@@ -180,6 +180,18 @@ public final class PQX extends PQ {
     }
 
     /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCMDTUPLES">See official doc for more information.</a>
+     */
+    public int cmdTuplesInt(final MemorySegment res) throws Throwable {
+        var countString = cmdTuples(res).reinterpret(10).getUtf8String(0);
+        if (!countString.isBlank()) {
+            return Integer.parseInt(countString);
+        }
+
+        return -1;
+    }
+
+    /**
      * Gets the value of a provided connection option keyword.
      *
      * @param conn    memory segment instance returned by connecting to postgresql server
@@ -196,11 +208,11 @@ public final class PQX extends PQ {
                 final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
 
                 if (!keywordPtr.equals(NULL)) {
-                    if (keywordPtr.reinterpret(256).getUtf8String(0).equals(keyword)) {
+                    if (keywordPtr.reinterpret(128).getUtf8String(0).equals(keyword)) {
                         final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
                         if (!valPtr.equals(NULL)) {
                             // Found keyword and has value.
-                            return Optional.of(valPtr.reinterpret(256).getUtf8String(0));
+                            return Optional.of(valPtr.reinterpret(128).getUtf8String(0));
                         } else {
                             // Found keyword but its value is null.
                             return Optional.empty();
@@ -234,9 +246,9 @@ public final class PQX extends PQ {
                 if (keywordPtr.equals(NULL)) {
                     break;
                 } else {
-                    System.out.print(keywordPtr.reinterpret(256).getUtf8String(0) + ": ");
+                    System.out.print(keywordPtr.reinterpret(128).getUtf8String(0) + ": ");
                     if (!valPtr.equals(NULL)) {
-                        System.out.print(valPtr.reinterpret(256).getUtf8String(0));
+                        System.out.print(valPtr.reinterpret(128).getUtf8String(0));
                     }
 
                     System.out.println();

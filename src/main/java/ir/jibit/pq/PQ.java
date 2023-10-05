@@ -93,6 +93,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle getValueHandle;
     private final MethodHandle getIsNullHandle;
     private final MethodHandle getLengthHandle;
+    private final MethodHandle cmdTuplesHandle;
 
     public PQ(final Path path) {
         this.path = path;
@@ -135,6 +136,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.getValueHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetvalue.name()).orElseThrow(), FUNCTION.PQgetvalue.fd);
         this.getIsNullHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetisnull.name()).orElseThrow(), FUNCTION.PQgetisnull.fd);
         this.getLengthHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetlength.name()).orElseThrow(), FUNCTION.PQgetlength.fd);
+        this.cmdTuplesHandle = linker.downcallHandle(lib.find(FUNCTION.PQcmdTuples.name()).orElseThrow(), FUNCTION.PQcmdTuples.fd);
     }
 
     /**
@@ -428,6 +430,13 @@ public sealed class PQ implements AutoCloseable permits PQX {
         return (int) getLengthHandle.invokeExact(res, rowNumber, columnNumber);
     }
 
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCMDTUPLES">See official doc for more information.</a>
+     */
+    public MemorySegment cmdTuples(final MemorySegment res) throws Throwable {
+        return (MemorySegment) cmdTuplesHandle.invokeExact(res);
+    }
+
     @Override
     public void close() throws Exception {
         memory.close();
@@ -474,7 +483,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQfmod(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
         PQgetvalue(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT)),
         PQgetisnull(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
-        PQgetlength(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT));
+        PQgetlength(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
+        PQcmdTuples(FunctionDescriptor.of(ADDRESS, ADDRESS));
 
         public final FunctionDescriptor fd;
 
