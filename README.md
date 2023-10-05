@@ -68,19 +68,19 @@ public final class Application {
 
     public static void main(final String[] args) throws Throwable {
         try (final var pqx = new PQX(Path.of("/opt/homebrew/opt/libpq/lib/libpq.dylib")); final var arena = Arena.ofConfined()) {
-            var conn = pqx.connectDB("postgresql://user:pass@localhost:5432/db").orElseThrow();
+            final var conn = pqx.connectDB("postgresql://user:pass@localhost:5432/db").orElseThrow();
             if (pqx.status(conn) != ConnStatusType.CONNECTION_OK) {
                 logger.error("Could not connect to postgresql instance!");
             } else {
-                var ps = PreparedStatement.create(arena);
+                final var ps = PreparedStatement.create(arena);
                 PreparedStatement.setStmtName(arena, ps, "insertEvent");
                 PreparedStatement.setQuery(arena, ps, "insert into event (type, metadata, entity_table, ts) values ($1, $2, $3, now());");
                 PreparedStatement.addTextValue(arena, ps, "TYPE"); // for $1
                 PreparedStatement.addTextValue(arena, ps, "Example metadata!"); // for $2
-                PreparedStatement.addTextValue(arena, ps, "event"); // // for $3
+                PreparedStatement.addTextValue(arena, ps, "event"); // for $3
                 pqx.prepare(conn, ps);
 
-                var res = pqx.execPreparedBinaryResult(conn, ps);
+                final var res = pqx.execPreparedBinaryResult(conn, ps);
                 if (!pqx.resultStatus(res).equals(ExecStatusType.PGRES_COMMAND_OK)) {
                     logger.error("Could not execute command!");
                 } else {
