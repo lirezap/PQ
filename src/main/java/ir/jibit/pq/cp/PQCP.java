@@ -48,12 +48,14 @@ public class PQCP implements AutoCloseable {
     private static final int DEFAULT_MIN_POOL_SIZE = 10;
     private static final int DEFAULT_MAX_POOL_SIZE = 25;
     private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final int DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT = 100;
 
     private final int minPoolSize;
     private final int maxPoolSize;
     private final AtomicInteger poolSize;
     private final Duration connectTimeout;
     private final AtomicInteger notAvailableConnectionCounter;
+    private final int makeNewConnectionCoefficient;
 
     private final PQX pqx;
     private final String connInfo;
@@ -61,19 +63,23 @@ public class PQCP implements AutoCloseable {
     private final Semaphore[] locks;
 
     public PQCP(final Path path, final String connInfo) throws Exception {
-        this(path, connInfo, DEFAULT_MIN_POOL_SIZE, DEFAULT_MAX_POOL_SIZE, DEFAULT_CONNECT_TIMEOUT);
+        this(path, connInfo, DEFAULT_MIN_POOL_SIZE, DEFAULT_MAX_POOL_SIZE, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
     public PQCP(final Path path, final String connInfo, final int minPoolSize) throws Exception {
-        this(path, connInfo, minPoolSize, DEFAULT_MAX_POOL_SIZE, DEFAULT_CONNECT_TIMEOUT);
+        this(path, connInfo, minPoolSize, DEFAULT_MAX_POOL_SIZE, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
     public PQCP(final Path path, final String connInfo, final int minPoolSize, final int maxPoolSize) throws Exception {
-        this(path, connInfo, minPoolSize, maxPoolSize, DEFAULT_CONNECT_TIMEOUT);
+        this(path, connInfo, minPoolSize, maxPoolSize, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+    }
+
+    public PQCP(final Path path, final String connInfo, final int minPoolSize, final int maxPoolSize, final Duration connectTimeout) throws Exception {
+        this(path, connInfo, minPoolSize, maxPoolSize, connectTimeout, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
     public PQCP(final Path path, final String connInfo, final int minPoolSize, final int maxPoolSize,
-                final Duration connectTimeout) throws Exception {
+                final Duration connectTimeout, final int makeNewConnectionCoefficient) throws Exception {
 
         if (minPoolSize > maxPoolSize) {
             throw new IllegalArgumentException("minPoolSize > maxPoolSize");
@@ -84,6 +90,7 @@ public class PQCP implements AutoCloseable {
         this.poolSize = new AtomicInteger(minPoolSize);
         this.connectTimeout = connectTimeout != null ? connectTimeout : DEFAULT_CONNECT_TIMEOUT;
         this.notAvailableConnectionCounter = new AtomicInteger(0);
+        this.makeNewConnectionCoefficient = makeNewConnectionCoefficient > 0 ? makeNewConnectionCoefficient : DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT;
 
         this.pqx = new PQX(path);
         this.connInfo = connInfo;
@@ -179,7 +186,7 @@ public class PQCP implements AutoCloseable {
                 // Let's check next in connections ...
             }
 
-            if (incrementNotAvailability && notAvailableConnectionCounter.incrementAndGet() > poolSize.get() * 1000) {
+            if (incrementNotAvailability && notAvailableConnectionCounter.incrementAndGet() > poolSize.get() * makeNewConnectionCoefficient) {
                 notAvailableConnectionCounter.getAndSet(0);
 
                 // If not reached end of connections array size.
