@@ -88,8 +88,9 @@ public final class Application {
                 }
 
                 pqx.clear(res); // Clear result pointer.
-                pqx.finish(conn); // Finish with connection.
             }
+
+            pqx.finish(conn); // Finish with connection.
         }
     }
 }
