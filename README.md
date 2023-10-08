@@ -48,7 +48,7 @@ Then add PQ dependency into your maven project:
 <dependency>
     <groupId>ir.jibit</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.17</version>
+    <version>0.0.18</version>
 </dependency>
 ```
 
