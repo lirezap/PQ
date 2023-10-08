@@ -104,43 +104,8 @@ public class PQCP implements AutoCloseable {
         if (!connect(this)) {
             throw new Exception("could not build connection pool successfully!");
         }
-    }
 
-    private static boolean connect(final PQCP cp) throws Exception {
-        final var arena = Arena.ofShared();
-        final var connInfoMemorySegment = arena.allocateUtf8String(cp.connInfo);
-        final var counter = new CountDownLatch(cp.minPoolSize);
-        final var connected = new AtomicBoolean(true);
-
-        IntStream.range(0, cp.minPoolSize).forEach(i -> Thread.startVirtualThread(() -> {
-            // To not continue making new connections when connected is false.
-            // If connected is true, set it to true and execute if block; otherwise don't execute if block.
-            if (connected.compareAndSet(true, true)) {
-                try {
-                    final var lock = new Semaphore(1);
-                    lock.acquire();
-                    cp.locks[i] = lock;
-                    cp.connections[i] = cp.pqx.connectDB(connInfoMemorySegment);
-                    if (cp.pqx.status(cp.connections[i]) != ConnStatusType.CONNECTION_OK) {
-                        throw new Exception("could not connect to database server");
-                    }
-                } catch (final Throwable th) {
-                    connected.compareAndSet(true, false);
-                } finally {
-                    cp.locks[i].release();
-                }
-            }
-
-            counter.countDown();
-        }));
-
-        counter.await();
-        arena.close();
-        if (!connected.get()) {
-            cp.close();
-        }
-
-        return connected.get();
+        logBasicServerInfo(this);
     }
 
     public int prepareThenExecute(final MemorySegment preparedStatement) {
@@ -230,14 +195,67 @@ public class PQCP implements AutoCloseable {
                 logger.info(String.format("extended pool size to have %d connections to handle more queries", atIndex + 1));
             } catch (final Throwable th) {
                 // Releasing ...
-                // We reach this section only in case of exception at pqx.connectDB(arena.allocateUtf8String(connInfo))!
-                // So connections[atIndex] will be null!
+                // We reach this section only in case of exception at pqx.connectDB(arena.allocateUtf8String(connInfo)).
+                // So connections[atIndex] will be null.
                 final var lock = locks[atIndex];
                 locks[atIndex] = null;
                 lock.release();
             } finally {
                 if (locks[atIndex] != null) locks[atIndex].release();
             }
+        }
+    }
+
+    private static boolean connect(final PQCP cp) throws Exception {
+        final var arena = Arena.ofShared();
+        final var connInfoMemorySegment = arena.allocateUtf8String(cp.connInfo);
+        final var counter = new CountDownLatch(cp.minPoolSize);
+        final var connected = new AtomicBoolean(true);
+
+        IntStream.range(0, cp.minPoolSize).forEach(i -> Thread.startVirtualThread(() -> {
+            // To not continue making new connections when connected is false.
+            // If connected is true, set it to true and execute if block; otherwise don't execute if block.
+            if (connected.compareAndSet(true, true)) {
+                try {
+                    final var lock = new Semaphore(1);
+                    lock.acquire();
+                    cp.locks[i] = lock;
+                    cp.connections[i] = cp.pqx.connectDB(connInfoMemorySegment);
+                    if (cp.pqx.status(cp.connections[i]) != ConnStatusType.CONNECTION_OK) {
+                        throw new Exception("could not connect to database server");
+                    }
+                } catch (final Throwable th) {
+                    connected.compareAndSet(true, false);
+                } finally {
+                    cp.locks[i].release();
+                }
+            }
+
+            counter.countDown();
+        }));
+
+        counter.await();
+        arena.close();
+        if (!connected.get()) {
+            cp.close();
+        }
+
+        return connected.get();
+    }
+
+    private static void logBasicServerInfo(final PQCP cp) {
+        try {
+            cp.locks[0].acquire();
+
+            logger.info(String.format(
+                    "connected to postgresql server: [server version: %d, protocol version: %d, db: %s]",
+                    cp.pqx.serverVersion(cp.connections[0]),
+                    cp.pqx.protocolVersion(cp.connections[0]),
+                    cp.pqx.db(cp.connections[0]).reinterpret(128).getUtf8String(0)));
+        } catch (Throwable th) {
+            logger.warning("could not log server information!");
+        } finally {
+            cp.locks[0].release();
         }
     }
 
