@@ -92,6 +92,43 @@ public class PQCP implements AutoCloseable {
         }
     }
 
+    private static boolean connect(final PQCP cp) throws Exception {
+        final var arena = Arena.ofShared();
+        final var connInfoMemorySegment = arena.allocateUtf8String(cp.connInfo);
+        final var counter = new CountDownLatch(cp.minPoolSize);
+        final var connected = new AtomicBoolean(true);
+
+        IntStream.range(0, cp.minPoolSize).forEach(i -> Thread.startVirtualThread(() -> {
+            // To not continue making new connections when connected is false.
+            // If connected is true, set it to true and execute if block; otherwise don't execute if block.
+            if (connected.compareAndSet(true, true)) {
+                try {
+                    final var lock = new Semaphore(1);
+                    lock.acquire();
+                    cp.locks[i] = lock;
+                    cp.connections[i] = cp.pqx.connectDB(connInfoMemorySegment);
+                    if (cp.pqx.status(cp.connections[i]) != ConnStatusType.CONNECTION_OK) {
+                        throw new Exception("could not connect to database server");
+                    }
+                } catch (final Throwable th) {
+                    connected.compareAndSet(true, false);
+                } finally {
+                    cp.locks[i].release();
+                }
+            }
+
+            counter.countDown();
+        }));
+
+        counter.await();
+        arena.close();
+        if (!connected.get()) {
+            cp.close();
+        }
+
+        return connected.get();
+    }
+
     public MemorySegment exec(final String command) throws Throwable {
         final var availableIndex = getAvailableConnectionIndexLocked(true);
         try {
@@ -115,11 +152,10 @@ public class PQCP implements AutoCloseable {
                 // Let's check next in connections ...
             }
 
-            final var createNewConnectionThreshold = poolSize.get() * 1000;
-            if (incrementNotAvailability && notAvailableConnectionCounter.incrementAndGet() > createNewConnectionThreshold) {
+            if (incrementNotAvailability && notAvailableConnectionCounter.incrementAndGet() > poolSize.get() * 1000) {
                 notAvailableConnectionCounter.getAndSet(0);
 
-                // If not reached end of connections array size!
+                // If not reached end of connections array size.
                 if (!poolSize.compareAndSet(maxPoolSize, maxPoolSize)) {
                     Thread.startVirtualThread(() -> makeNewConnection(poolSize.getAndIncrement()));
                 }
@@ -145,9 +181,8 @@ public class PQCP implements AutoCloseable {
                 }
 
                 if (pqx.status(connections[atIndex]) != ConnStatusType.CONNECTION_OK) {
-                    pqx.finish(connections[atIndex]);
-
                     // Releasing ...
+                    pqx.finish(connections[atIndex]);
                     connections[atIndex] = null;
                     final var lock = locks[atIndex];
                     locks[atIndex] = null;
@@ -166,40 +201,6 @@ public class PQCP implements AutoCloseable {
                 if (locks[atIndex] != null) locks[atIndex].release();
             }
         }
-    }
-
-    private static boolean connect(final PQCP cp) throws Exception {
-        final var arena = Arena.ofShared();
-        final var connInfoMemorySegment = arena.allocateUtf8String(cp.connInfo);
-        final var counter = new CountDownLatch(cp.minPoolSize);
-        final var connected = new AtomicBoolean(true);
-
-        IntStream.range(0, cp.minPoolSize).forEach(i -> Thread.startVirtualThread(() -> {
-            if (connected.get()) { // To not continue making new connections when connected is false!
-                try {
-                    final var lock = new Semaphore(1);
-                    lock.acquire();
-                    cp.locks[i] = lock;
-                    cp.connections[i] = cp.pqx.connectDB(connInfoMemorySegment);
-                    if (cp.pqx.status(cp.connections[i]) != ConnStatusType.CONNECTION_OK) {
-                        throw new Exception("could not connect to database server");
-                    }
-                } catch (final Throwable th) {
-                    connected.compareAndSet(true, false);
-                } finally {
-                    cp.locks[i].release();
-                    counter.countDown();
-                }
-            }
-        }));
-
-        counter.await();
-        arena.close();
-        if (!connected.get()) {
-            cp.close();
-        }
-
-        return connected.get();
     }
 
     @Override
