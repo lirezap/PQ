@@ -22,6 +22,7 @@ package ir.jibit.pq.cp;
 import ir.jibit.pq.PQ;
 import ir.jibit.pq.PQX;
 import ir.jibit.pq.enums.ConnStatusType;
+import ir.jibit.pq.enums.ExecStatusType;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -33,6 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
+
+import static ir.jibit.pq.layouts.PreparedStatement.PreparedStatement_stmtName_varHandle;
 
 /**
  * A connection pool implementation using {@link PQ}.
@@ -129,10 +132,34 @@ public class PQCP implements AutoCloseable {
         return connected.get();
     }
 
-    public MemorySegment exec(final String command) throws Throwable {
+    public int prepareThenExecute(final MemorySegment preparedStatement) {
         final var availableIndex = getAvailableConnectionIndexLocked(true);
+        final var conn = connections[availableIndex];
+
         try {
-            return pqx.exec(connections[availableIndex], command);
+            final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+            var res = pqx.describePrepared(conn, stmtName);
+            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+                // Preparing statement ...
+                res = pqx.prepare(conn, preparedStatement);
+                if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+                    throw new RuntimeException(pqx.errorMessage(res).reinterpret(256).getUtf8String(0));
+                }
+            }
+
+            res = pqx.execPreparedBinaryResult(conn, preparedStatement);
+            try {
+                final var status = pqx.resultStatus(res);
+                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    return pqx.cmdTuplesInt(res);
+                } else {
+                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                }
+            } finally {
+                pqx.clear(res);
+            }
+        } catch (final Throwable th) {
+            throw new RuntimeException(th);
         } finally {
             locks[availableIndex].release();
         }
