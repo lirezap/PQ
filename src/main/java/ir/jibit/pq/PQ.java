@@ -80,6 +80,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle execHandle;
     private final MethodHandle prepareHandle;
     private final MethodHandle execPreparedHandle;
+    private final MethodHandle describePreparedHandle;
     private final MethodHandle resultStatusHandle;
     private final MethodHandle resultErrorMessageHandle;
     private final MethodHandle clearHandle;
@@ -123,6 +124,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.execHandle = linker.downcallHandle(lib.find(FUNCTION.PQexec.name()).orElseThrow(), FUNCTION.PQexec.fd);
         this.prepareHandle = linker.downcallHandle(lib.find(FUNCTION.PQprepare.name()).orElseThrow(), FUNCTION.PQprepare.fd);
         this.execPreparedHandle = linker.downcallHandle(lib.find(FUNCTION.PQexecPrepared.name()).orElseThrow(), FUNCTION.PQexecPrepared.fd);
+        this.describePreparedHandle = linker.downcallHandle(lib.find(FUNCTION.PQdescribePrepared.name()).orElseThrow(), FUNCTION.PQdescribePrepared.fd);
         this.resultStatusHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultStatus.name()).orElseThrow(), FUNCTION.PQresultStatus.fd);
         this.resultErrorMessageHandle = linker.downcallHandle(lib.find(FUNCTION.PQresultErrorMessage.name()).orElseThrow(), FUNCTION.PQresultErrorMessage.fd);
         this.clearHandle = linker.downcallHandle(lib.find(FUNCTION.PQclear.name()).orElseThrow(), FUNCTION.PQclear.fd);
@@ -295,6 +297,13 @@ public sealed class PQ implements AutoCloseable permits PQX {
                                       final MemorySegment paramFormats, final int resultFormat) throws Throwable {
 
         return (MemorySegment) execPreparedHandle.invokeExact(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, resultFormat);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQDESCRIBEPREPARED">See official doc for more information.</a>
+     */
+    public MemorySegment describePrepared(final MemorySegment conn, final MemorySegment stmtName) throws Throwable {
+        return (MemorySegment) describePreparedHandle.invokeExact(conn, stmtName);
     }
 
     /**
@@ -473,6 +482,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQresultErrorMessage(FunctionDescriptor.of(ADDRESS, ADDRESS)),
         PQprepare(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
         PQexecPrepared(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
+        PQdescribePrepared(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS)),
         PQclear(FunctionDescriptor.ofVoid(ADDRESS)),
         PQntuples(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
         PQnfields(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
