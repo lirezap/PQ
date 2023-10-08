@@ -85,6 +85,10 @@ public class PQCP implements AutoCloseable {
             throw new IllegalArgumentException("minPoolSize > maxPoolSize");
         }
 
+        if (makeNewConnectionCoefficient < 0) {
+            throw new IllegalArgumentException("makeNewConnectionCoefficient is negative");
+        }
+
         this.minPoolSize = minPoolSize > 0 ? minPoolSize : DEFAULT_MIN_POOL_SIZE;
         this.maxPoolSize = maxPoolSize > 0 ? maxPoolSize : DEFAULT_MAX_POOL_SIZE;
         this.poolSize = new AtomicInteger(minPoolSize);
