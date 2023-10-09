@@ -5,8 +5,8 @@ with the goal of being high performance. Higher level abstractions can be built 
 functions.
 
 The main usable connectors are PQ, PQX (PQ extended) and PQCP (PQ connection pool). PQ is very low level FFM enabled
-access connector, it hase methods equivalent to postgresql C functions. PQX is based on PQ with some extended features.
-PQCP is a connection pool implementation based on PQX that is probably the most important class of this library. 
+access connector, it has methods equivalent to postgresql C functions. PQX is based on PQ with some extended features.
+PQCP is a connection pool implementation based on PQX and is probably the most important class of this library. 
 
 ---
 
