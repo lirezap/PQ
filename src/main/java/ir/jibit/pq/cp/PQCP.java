@@ -75,7 +75,9 @@ public class PQCP implements AutoCloseable {
         this(path, connInfo, minPoolSize, maxPoolSize, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
-    public PQCP(final Path path, final String connInfo, final int minPoolSize, final int maxPoolSize, final Duration connectTimeout) throws Exception {
+    public PQCP(final Path path, final String connInfo, final int minPoolSize, final int maxPoolSize,
+                final Duration connectTimeout) throws Exception {
+
         this(path, connInfo, minPoolSize, maxPoolSize, connectTimeout, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
@@ -109,22 +111,13 @@ public class PQCP implements AutoCloseable {
         logBasicServerInfo(this);
     }
 
-    public int prepareThenExecute(final MemorySegment preparedStatement) throws TimeoutException {
+    public int prepareThenExecute(final MemorySegment preparedStatement) throws TimeoutException, RuntimeException {
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime());
         final var conn = connections[availableIndex];
 
         try {
-            final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
-            var res = pqx.describePrepared(conn, stmtName);
-            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-                // Preparing statement ...
-                res = pqx.prepare(conn, preparedStatement);
-                if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-                    throw new RuntimeException(pqx.errorMessage(res).reinterpret(256).getUtf8String(0));
-                }
-            }
-
-            res = pqx.execPreparedBinaryResult(conn, preparedStatement);
+            prepare(conn, preparedStatement);
+            final var res = pqx.execPreparedBinaryResult(conn, preparedStatement);
             try {
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
@@ -142,8 +135,57 @@ public class PQCP implements AutoCloseable {
         }
     }
 
+    public MemorySegment prepareThenFetchTextResult(final MemorySegment preparedStatement)
+            throws TimeoutException, RuntimeException {
+
+        return prepareThenFetch(preparedStatement, true);
+    }
+
+    public MemorySegment prepareThenFetchBinaryResult(final MemorySegment preparedStatement)
+            throws TimeoutException, RuntimeException {
+
+        return prepareThenFetch(preparedStatement, false);
+    }
+
     public void clear(final MemorySegment res) throws Throwable {
         pqx.clear(res);
+    }
+
+    private MemorySegment prepareThenFetch(final MemorySegment preparedStatement, final boolean text)
+            throws TimeoutException, RuntimeException {
+
+        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime());
+        final var conn = connections[availableIndex];
+        try {
+            prepare(conn, preparedStatement);
+            final var res = text ? pqx.execPreparedTextResult(conn, preparedStatement) : pqx.execPreparedBinaryResult(conn, preparedStatement);
+            try {
+                final var status = pqx.resultStatus(res);
+                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    return res;
+                } else {
+                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                }
+            } finally {
+                pqx.clear(res);
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        } finally {
+            locks[availableIndex].release();
+        }
+    }
+
+    private void prepare(final MemorySegment conn, final MemorySegment preparedStatement) throws Throwable {
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        var res = pqx.describePrepared(conn, stmtName);
+        if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+            // Preparing statement ...
+            res = pqx.prepare(conn, preparedStatement);
+            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+                throw new RuntimeException(pqx.errorMessage(res).reinterpret(256).getUtf8String(0));
+            }
+        }
     }
 
     private int getAvailableConnectionIndexLocked(final boolean incrementNotAvailability, final long start) throws TimeoutException {
