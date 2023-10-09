@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
@@ -108,8 +109,8 @@ public class PQCP implements AutoCloseable {
         logBasicServerInfo(this);
     }
 
-    public int prepareThenExecute(final MemorySegment preparedStatement) {
-        final var availableIndex = getAvailableConnectionIndexLocked(true);
+    public int prepareThenExecute(final MemorySegment preparedStatement) throws TimeoutException {
+        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime());
         final var conn = connections[availableIndex];
 
         try {
@@ -134,7 +135,7 @@ public class PQCP implements AutoCloseable {
             } finally {
                 pqx.clear(res);
             }
-        } catch (final Throwable th) {
+        } catch (Throwable th) {
             throw new RuntimeException(th);
         } finally {
             locks[availableIndex].release();
@@ -145,7 +146,11 @@ public class PQCP implements AutoCloseable {
         pqx.clear(res);
     }
 
-    private int getAvailableConnectionIndexLocked(final boolean incrementNotAvailability) {
+    private int getAvailableConnectionIndexLocked(final boolean incrementNotAvailability, final long start) throws TimeoutException {
+        if (System.nanoTime() - start >= connectTimeout.toNanos()) {
+            throw new TimeoutException(String.format("timeout of %d ms occurred while getting connection from pool", connectTimeout.toMillis()));
+        }
+
         try {
             for (int i = 0; i < maxPoolSize; i++) {
                 if (locks[i] != null && locks[i].tryAcquire()) {
@@ -170,7 +175,7 @@ public class PQCP implements AutoCloseable {
         }
 
         // Let's try for next time to find any available connection ...
-        return getAvailableConnectionIndexLocked(false);
+        return getAvailableConnectionIndexLocked(false, start);
     }
 
     private synchronized void makeNewConnection(final int atIndex) {
@@ -193,7 +198,7 @@ public class PQCP implements AutoCloseable {
                 }
 
                 logger.info(String.format("extended pool size to have %d connections to handle more queries", atIndex + 1));
-            } catch (final Throwable th) {
+            } catch (Throwable th) {
                 // Releasing ...
                 // We reach this section only in case of exception at pqx.connectDB(arena.allocateUtf8String(connInfo)).
                 // So connections[atIndex] will be null.
@@ -224,7 +229,7 @@ public class PQCP implements AutoCloseable {
                     if (cp.pqx.status(cp.connections[i]) != ConnStatusType.CONNECTION_OK) {
                         throw new Exception("could not connect to database server");
                     }
-                } catch (final Throwable th) {
+                } catch (Throwable th) {
                     connected.compareAndSet(true, false);
                 } finally {
                     cp.locks[i].release();
@@ -266,7 +271,7 @@ public class PQCP implements AutoCloseable {
                 try {
                     locks[conn].acquire();
                     pqx.finish(connections[conn]);
-                } catch (final Throwable th) {
+                } catch (Throwable th) {
                     // We must call finish for next connection.
                 } finally {
                     locks[conn].release();
