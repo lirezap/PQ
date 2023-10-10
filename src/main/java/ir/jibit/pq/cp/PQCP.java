@@ -183,7 +183,7 @@ public class PQCP implements AutoCloseable {
             // Preparing statement ...
             res = pqx.prepare(conn, preparedStatement);
             if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-                throw new RuntimeException(pqx.errorMessage(res).reinterpret(256).getUtf8String(0));
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
             }
         }
     }
