@@ -111,6 +111,50 @@ public class PQCP implements AutoCloseable {
         logBasicServerInfo(this);
     }
 
+    public void prepare(final MemorySegment preparedStatement) throws RuntimeException {
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        for (int i = 0; i < maxPoolSize; i++) {
+            try {
+                locks[i].acquire();
+                if (connections[i] != null) {
+                    pqx.prepare(connections[i], stmtName);
+                }
+            } catch (Throwable th) {
+                throw new RuntimeException(th);
+            } finally {
+                locks[i].release();
+            }
+        }
+    }
+
+    public int execute(final MemorySegment preparedStatement) throws TimeoutException, RuntimeException {
+        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+        final var conn = connections[availableIndex];
+        var connReleased = false;
+
+        try {
+            final var res = pqx.execPreparedBinaryResult(conn, preparedStatement);
+            // Release as soon as possible.
+            locks[availableIndex].release();
+            connReleased = true;
+
+            try {
+                final var status = pqx.resultStatus(res);
+                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    return pqx.cmdTuplesInt(res);
+                } else {
+                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                }
+            } finally {
+                pqx.clear(res);
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        } finally {
+            if (!connReleased) locks[availableIndex].release();
+        }
+    }
+
     public int prepareThenExecute(final MemorySegment preparedStatement) throws TimeoutException, RuntimeException {
         final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
@@ -141,10 +185,22 @@ public class PQCP implements AutoCloseable {
         }
     }
 
+    public MemorySegment fetchTextResult(final MemorySegment preparedStatement)
+            throws TimeoutException, RuntimeException {
+
+        return fetch(preparedStatement, true);
+    }
+
     public MemorySegment prepareThenFetchTextResult(final MemorySegment preparedStatement)
             throws TimeoutException, RuntimeException {
 
         return prepareThenFetch(preparedStatement, true);
+    }
+
+    public MemorySegment fetchBinaryResult(final MemorySegment preparedStatement)
+            throws TimeoutException, RuntimeException {
+
+        return fetch(preparedStatement, false);
     }
 
     public MemorySegment prepareThenFetchBinaryResult(final MemorySegment preparedStatement)
@@ -155,6 +211,36 @@ public class PQCP implements AutoCloseable {
 
     public void clear(final MemorySegment res) throws Throwable {
         pqx.clear(res);
+    }
+
+    private MemorySegment fetch(final MemorySegment preparedStatement,
+                                final boolean text) throws TimeoutException, RuntimeException {
+
+        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+        final var conn = connections[availableIndex];
+        var connReleased = false;
+
+        try {
+            final var res = text ? pqx.execPreparedTextResult(conn, preparedStatement) : pqx.execPreparedBinaryResult(conn, preparedStatement);
+            // Release as soon as possible.
+            locks[availableIndex].release();
+            connReleased = true;
+
+            try {
+                final var status = pqx.resultStatus(res);
+                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    return res;
+                } else {
+                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                }
+            } finally {
+                pqx.clear(res);
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        } finally {
+            if (!connReleased) locks[availableIndex].release();
+        }
     }
 
     private MemorySegment prepareThenFetch(final MemorySegment preparedStatement,
