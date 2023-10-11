@@ -192,6 +192,55 @@ public final class PQX extends PQ {
     }
 
     /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDPREPARE">See official doc for more information.</a>
+     */
+    public boolean sendPrepare(final MemorySegment conn, final MemorySegment preparedStatement) throws Throwable {
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var query = (MemorySegment) PreparedStatement_query_varHandle.get(preparedStatement);
+        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatement);
+
+        return sendPrepare(conn, stmtName, query, nParams);
+    }
+
+    /**
+     * Executes a prepared statement asynchronously by using pointers provided as struct fields in parameter.
+     *
+     * @param conn              postgresql database connection
+     * @param preparedStatement pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @return true if submit was successful otherwise false
+     */
+    public boolean sendQueryPreparedTextResult(final MemorySegment conn,
+                                               final MemorySegment preparedStatement) throws Throwable {
+
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatement);
+        final var paramValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatement);
+        final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
+        final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
+
+        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 0);
+    }
+
+    /**
+     * Executes a prepared statement asynchronously by using pointers provided as struct fields in parameter.
+     *
+     * @param conn              postgresql database connection
+     * @param preparedStatement pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @return true if submit was successful otherwise false
+     */
+    public boolean sendQueryPreparedBinaryResult(final MemorySegment conn,
+                                                 final MemorySegment preparedStatement) throws Throwable {
+
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatement);
+        final var paramValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatement);
+        final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
+        final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
+
+        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 1);
+    }
+
+    /**
      * Gets the value of a provided connection option keyword.
      *
      * @param conn    memory segment instance returned by connecting to postgresql server

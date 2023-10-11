@@ -96,6 +96,15 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle getLengthHandle;
     private final MethodHandle cmdTuplesHandle;
 
+    // Asynchronous Command Processing
+    private final MethodHandle sendQueryHandle;
+    private final MethodHandle sendPrepareHandle;
+    private final MethodHandle sendQueryPreparedHandle;
+    private final MethodHandle sendDescribePreparedHandle;
+    private final MethodHandle getResultHandle;
+    private final MethodHandle consumeInputHandle;
+    private final MethodHandle isBusyHandle;
+
     public PQ(final Path path) {
         this.path = path;
         this.memory = Arena.ofShared();
@@ -139,6 +148,15 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.getIsNullHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetisnull.name()).orElseThrow(), FUNCTION.PQgetisnull.fd);
         this.getLengthHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetlength.name()).orElseThrow(), FUNCTION.PQgetlength.fd);
         this.cmdTuplesHandle = linker.downcallHandle(lib.find(FUNCTION.PQcmdTuples.name()).orElseThrow(), FUNCTION.PQcmdTuples.fd);
+
+        // Asynchronous Command Processing
+        this.sendQueryHandle = linker.downcallHandle(lib.find(FUNCTION.PQsendQuery.name()).orElseThrow(), FUNCTION.PQsendQuery.fd);
+        this.sendPrepareHandle = linker.downcallHandle(lib.find(FUNCTION.PQsendPrepare.name()).orElseThrow(), FUNCTION.PQsendPrepare.fd);
+        this.sendQueryPreparedHandle = linker.downcallHandle(lib.find(FUNCTION.PQsendQueryPrepared.name()).orElseThrow(), FUNCTION.PQsendQueryPrepared.fd);
+        this.sendDescribePreparedHandle = linker.downcallHandle(lib.find(FUNCTION.PQsendDescribePrepared.name()).orElseThrow(), FUNCTION.PQsendDescribePrepared.fd);
+        this.getResultHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetResult.name()).orElseThrow(), FUNCTION.PQgetResult.fd);
+        this.consumeInputHandle = linker.downcallHandle(lib.find(FUNCTION.PQconsumeInput.name()).orElseThrow(), FUNCTION.PQconsumeInput.fd);
+        this.isBusyHandle = linker.downcallHandle(lib.find(FUNCTION.PQisBusy.name()).orElseThrow(), FUNCTION.PQisBusy.fd);
     }
 
     /**
@@ -446,6 +464,90 @@ public sealed class PQ implements AutoCloseable permits PQX {
         return (MemorySegment) cmdTuplesHandle.invokeExact(res);
     }
 
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDQUERY">See official doc for more information.</a>
+     */
+    public boolean sendQuery(final MemorySegment conn, final MemorySegment command) throws Throwable {
+        switch ((int) sendQueryHandle.invokeExact(conn, command)) {
+            case 0:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDPREPARE">See official doc for more information.</a>
+     */
+    public boolean sendPrepare(final MemorySegment conn, final MemorySegment stmtName, final MemorySegment query,
+                               final int nParams) throws Throwable {
+
+        switch ((int) sendPrepareHandle.invokeExact(conn, stmtName, query, nParams, NULL)) {
+            case 0:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDQUERYPREPARED">See official doc for more information.</a>
+     */
+    public boolean sendQueryPrepared(final MemorySegment conn, final MemorySegment stmtName, final int nParams,
+                                     final MemorySegment paramValues, final MemorySegment paramLengths,
+                                     final MemorySegment paramFormats, final int resultFormat) throws Throwable {
+
+        switch ((int) sendQueryPreparedHandle.invokeExact(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, resultFormat)) {
+            case 0:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDDESCRIBEPREPARED">See official doc for more information.</a>
+     */
+    public boolean sendDescribePrepared(final MemorySegment conn, final MemorySegment stmtName) throws Throwable {
+        switch ((int) sendDescribePreparedHandle.invokeExact(conn, stmtName)) {
+            case 0:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQGETRESULT">See official doc for more information.</a>
+     */
+    public MemorySegment getResult(final MemorySegment conn) throws Throwable {
+        return (MemorySegment) getResultHandle.invokeExact(conn);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQCONSUMEINPUT">See official doc for more information.</a>
+     */
+    public boolean consumeInput(final MemorySegment conn) throws Throwable {
+        switch ((int) consumeInputHandle.invokeExact(conn)) {
+            case 0:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQISBUSY">See official doc for more information.</a>
+     */
+    public boolean isBusy(final MemorySegment conn) throws Throwable {
+        switch ((int) isBusyHandle.invokeExact(conn)) {
+            case 0:
+                return false;
+            default:
+                return true;
+        }
+    }
+
     @Override
     public void close() throws Exception {
         memory.close();
@@ -494,7 +596,16 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQgetvalue(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT)),
         PQgetisnull(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
         PQgetlength(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
-        PQcmdTuples(FunctionDescriptor.of(ADDRESS, ADDRESS));
+        PQcmdTuples(FunctionDescriptor.of(ADDRESS, ADDRESS)),
+
+        // Asynchronous Command Processing
+        PQsendQuery(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
+        PQsendPrepare(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
+        PQsendQueryPrepared(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
+        PQsendDescribePrepared(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
+        PQgetResult(FunctionDescriptor.of(ADDRESS, ADDRESS)),
+        PQconsumeInput(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
+        PQisBusy(FunctionDescriptor.of(JAVA_INT, ADDRESS));
 
         public final FunctionDescriptor fd;
 
