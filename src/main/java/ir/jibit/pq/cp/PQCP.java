@@ -221,19 +221,15 @@ public class PQCP implements AutoCloseable {
 
         try {
             final var res = text ? pqx.execPreparedTextResult(conn, preparedStatement) : pqx.execPreparedBinaryResult(conn, preparedStatement);
-            try {
-                // Release as soon as possible.
-                locks[availableIndex].release();
-                connReleased = true;
+            // Release as soon as possible.
+            locks[availableIndex].release();
+            connReleased = true;
 
-                final var status = pqx.resultStatus(res);
-                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
-                    return res;
-                } else {
-                    throw new RuntimeException(String.format("status returned by database server was %s", status));
-                }
-            } finally {
-                pqx.clear(res);
+            final var status = pqx.resultStatus(res);
+            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                return res;
+            } else {
+                throw new RuntimeException(String.format("status returned by database server was %s", status));
             }
         } catch (Throwable th) {
             throw new RuntimeException(th);
@@ -253,19 +249,15 @@ public class PQCP implements AutoCloseable {
         try {
             prepare(conn, preparedStatement, stmtName);
             final var res = text ? pqx.execPreparedTextResult(conn, preparedStatement) : pqx.execPreparedBinaryResult(conn, preparedStatement);
-            try {
-                // Release as soon as possible.
-                locks[availableIndex].release();
-                connReleased = true;
+            // Release as soon as possible.
+            locks[availableIndex].release();
+            connReleased = true;
 
-                final var status = pqx.resultStatus(res);
-                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
-                    return res;
-                } else {
-                    throw new RuntimeException(String.format("status returned by database server was %s", status));
-                }
-            } finally {
-                pqx.clear(res);
+            final var status = pqx.resultStatus(res);
+            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                return res;
+            } else {
+                throw new RuntimeException(String.format("status returned by database server was %s", status));
             }
         } catch (Throwable th) {
             throw new RuntimeException(th);
