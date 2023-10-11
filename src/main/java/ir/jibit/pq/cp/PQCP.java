@@ -28,7 +28,9 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
@@ -49,7 +51,6 @@ public class PQCP implements AutoCloseable {
     public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
     public static final int DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT = 100;
 
-    private final ExecutorService executor;
     private final int minPoolSize;
     private final int maxPoolSize;
     private final AtomicInteger poolSize;
@@ -57,32 +58,31 @@ public class PQCP implements AutoCloseable {
     private final AtomicInteger notAvailableConnectionCounter;
     private final int makeNewConnectionCoefficient;
 
-    private final PQX pqx;
-    private final String connInfo;
-    private final MemorySegment[] connections;
-    private final Semaphore[] locks;
+    protected final PQX pqx;
+    protected final String connInfo;
+    protected final MemorySegment[] connections;
+    protected final Semaphore[] locks;
 
     public PQCP(final Path path, final String connInfo) throws Exception {
-        this(path, connInfo, null, DEFAULT_MIN_POOL_SIZE, DEFAULT_MAX_POOL_SIZE, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+        this(path, connInfo, DEFAULT_MIN_POOL_SIZE, DEFAULT_MAX_POOL_SIZE, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
     public PQCP(final Path path, final String connInfo, final int minPoolSize) throws Exception {
-        this(path, connInfo, null, minPoolSize, DEFAULT_MAX_POOL_SIZE, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+        this(path, connInfo, minPoolSize, DEFAULT_MAX_POOL_SIZE, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
     public PQCP(final Path path, final String connInfo, final int minPoolSize, final int maxPoolSize) throws Exception {
-        this(path, connInfo, null, minPoolSize, maxPoolSize, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+        this(path, connInfo, minPoolSize, maxPoolSize, DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
     public PQCP(final Path path, final String connInfo, final int minPoolSize, final int maxPoolSize,
                 final Duration connectTimeout) throws Exception {
 
-        this(path, connInfo, null, minPoolSize, maxPoolSize, connectTimeout, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+        this(path, connInfo, minPoolSize, maxPoolSize, connectTimeout, DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
-    public PQCP(final Path path, final String connInfo, final ExecutorService executor, final int minPoolSize,
-                final int maxPoolSize, final Duration connectTimeout,
-                final int makeNewConnectionCoefficient) throws Exception {
+    public PQCP(final Path path, final String connInfo, final int minPoolSize, final int maxPoolSize,
+                final Duration connectTimeout, final int makeNewConnectionCoefficient) throws Exception {
 
         if (minPoolSize > maxPoolSize) {
             throw new IllegalArgumentException("minPoolSize > maxPoolSize");
@@ -92,7 +92,6 @@ public class PQCP implements AutoCloseable {
             throw new IllegalArgumentException("makeNewConnectionCoefficient is negative");
         }
 
-        this.executor = executor != null ? executor : Executors.newVirtualThreadPerTaskExecutor();
         this.minPoolSize = minPoolSize > 0 ? minPoolSize : DEFAULT_MIN_POOL_SIZE;
         this.maxPoolSize = maxPoolSize > 0 ? maxPoolSize : DEFAULT_MAX_POOL_SIZE;
         this.poolSize = new AtomicInteger(minPoolSize);
@@ -140,50 +139,6 @@ public class PQCP implements AutoCloseable {
         } finally {
             if (!connReleased) locks[availableIndex].release();
         }
-    }
-
-    public CompletableFuture<Integer> prepareThenExecuteAsync(final MemorySegment preparedStatement) {
-        final var result = new CompletableFuture<Integer>();
-
-        executor.submit(() -> {
-            try {
-                final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
-                final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
-                final var conn = connections[availableIndex];
-                var connReleased = false;
-
-                try {
-                    prepareAsync(conn, preparedStatement, stmtName);
-                    if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
-                        final var res = loopGetResult(conn);
-                        // Release as soon as possible.
-                        locks[availableIndex].release();
-                        connReleased = true;
-
-                        try {
-                            final var status = pqx.resultStatus(res);
-                            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
-                                result.complete(pqx.cmdTuplesInt(res));
-                            } else {
-                                throw new RuntimeException(String.format("status returned by database server was %s", status));
-                            }
-                        } finally {
-                            pqx.clear(res);
-                        }
-                    } else {
-                        throw new RuntimeException("could not submit query");
-                    }
-                } catch (Throwable th) {
-                    result.completeExceptionally(th);
-                } finally {
-                    if (!connReleased) locks[availableIndex].release();
-                }
-            } catch (TimeoutException | RuntimeException ex) {
-                result.completeExceptionally(ex);
-            }
-        });
-
-        return result;
     }
 
     public MemorySegment prepareThenFetchTextResult(final MemorySegment preparedStatement)
@@ -247,53 +202,8 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    private void prepareAsync(final MemorySegment conn, final MemorySegment preparedStatement,
-                              final MemorySegment stmtName) throws Throwable {
-
-        if (pqx.sendDescribePrepared(conn, stmtName)) {
-            var res = loopGetResult(conn);
-            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-                // Preparing statement ...
-                if (pqx.sendPrepare(conn, preparedStatement)) {
-                    res = loopGetResult(conn);
-                    if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-                        throw new RuntimeException(pqx.resultErrorMessageString(res));
-                    }
-                } else {
-                    throw new RuntimeException("could not prepare statement");
-                }
-            }
-        } else {
-            throw new RuntimeException("could not check prepared statement");
-        }
-    }
-
-    private MemorySegment loopGetResult(final MemorySegment conn) throws Throwable {
-        for (; ; ) {
-            if (pqx.consumeInput(conn)) {
-                if (pqx.isBusy(conn)) {
-                    Thread.sleep(1);
-                } else {
-                    break;
-                }
-            } else {
-                throw new RuntimeException(pqx.errorMessage(conn).reinterpret(256).getUtf8String(0));
-            }
-        }
-
-        MemorySegment call;
-        MemorySegment result = null;
-        for (; ; ) {
-            if ((call = pqx.getResult(conn)).equals(MemorySegment.NULL)) {
-                return result;
-            } else {
-                result = call;
-            }
-        }
-    }
-
-    private int getAvailableConnectionIndexLocked(final boolean incrementNotAvailability, final long start,
-                                                  int tryCount) throws TimeoutException {
+    protected int getAvailableConnectionIndexLocked(final boolean incrementNotAvailability, final long start,
+                                                    int tryCount) throws TimeoutException {
 
         if (System.nanoTime() - start >= connectTimeout.toNanos()) {
             throw new TimeoutException(String.format("timeout of %d ms occurred while getting connection from pool", connectTimeout.toMillis()));
