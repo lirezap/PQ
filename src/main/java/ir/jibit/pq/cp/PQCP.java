@@ -51,12 +51,12 @@ public class PQCP implements AutoCloseable {
     public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
     public static final int DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT = 100;
 
-    private final int minPoolSize;
-    private final int maxPoolSize;
-    private final AtomicInteger poolSize;
-    private final Duration connectTimeout;
-    private final AtomicInteger notAvailableConnectionCounter;
-    private final int makeNewConnectionCoefficient;
+    protected final int minPoolSize;
+    protected final int maxPoolSize;
+    protected final AtomicInteger poolSize;
+    protected final Duration connectTimeout;
+    protected final AtomicInteger notAvailableConnectionCounter;
+    protected final int makeNewConnectionCoefficient;
 
     protected final PQX pqx;
     protected final String connInfo;
@@ -113,15 +113,15 @@ public class PQCP implements AutoCloseable {
 
     public void prepare(final MemorySegment preparedStatement) throws RuntimeException {
         for (int i = 0; i < maxPoolSize; i++) {
-            try {
-                locks[i].acquire();
-                if (connections[i] != null) {
+            if (locks[i] != null) {
+                try {
+                    locks[i].acquire();
                     pqx.prepare(connections[i], preparedStatement);
+                } catch (Throwable th) {
+                    throw new RuntimeException(th);
+                } finally {
+                    locks[i].release();
                 }
-            } catch (Throwable th) {
-                throw new RuntimeException(th);
-            } finally {
-                locks[i].release();
             }
         }
     }
@@ -133,11 +133,11 @@ public class PQCP implements AutoCloseable {
 
         try {
             final var res = pqx.execPreparedBinaryResult(conn, preparedStatement);
-            // Release as soon as possible.
-            locks[availableIndex].release();
-            connReleased = true;
-
             try {
+                // Release as soon as possible.
+                locks[availableIndex].release();
+                connReleased = true;
+
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                     return pqx.cmdTuplesInt(res);
@@ -163,11 +163,11 @@ public class PQCP implements AutoCloseable {
         try {
             prepare(conn, preparedStatement, stmtName);
             final var res = pqx.execPreparedBinaryResult(conn, preparedStatement);
-            // Release as soon as possible.
-            locks[availableIndex].release();
-            connReleased = true;
-
             try {
+                // Release as soon as possible.
+                locks[availableIndex].release();
+                connReleased = true;
+
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                     return pqx.cmdTuplesInt(res);
@@ -221,11 +221,11 @@ public class PQCP implements AutoCloseable {
 
         try {
             final var res = text ? pqx.execPreparedTextResult(conn, preparedStatement) : pqx.execPreparedBinaryResult(conn, preparedStatement);
-            // Release as soon as possible.
-            locks[availableIndex].release();
-            connReleased = true;
-
             try {
+                // Release as soon as possible.
+                locks[availableIndex].release();
+                connReleased = true;
+
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                     return res;
@@ -253,11 +253,11 @@ public class PQCP implements AutoCloseable {
         try {
             prepare(conn, preparedStatement, stmtName);
             final var res = text ? pqx.execPreparedTextResult(conn, preparedStatement) : pqx.execPreparedBinaryResult(conn, preparedStatement);
-            // Release as soon as possible.
-            locks[availableIndex].release();
-            connReleased = true;
-
             try {
+                // Release as soon as possible.
+                locks[availableIndex].release();
+                connReleased = true;
+
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                     return res;
@@ -384,9 +384,7 @@ public class PQCP implements AutoCloseable {
 
         counter.await();
         arena.close();
-        if (!connected.get()) {
-            cp.close();
-        }
+        if (!connected.get()) cp.close();
 
         return connected.get();
     }
