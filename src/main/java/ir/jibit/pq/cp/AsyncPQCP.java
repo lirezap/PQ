@@ -69,6 +69,76 @@ public class AsyncPQCP extends PQCP {
         this.executor = executor;
     }
 
+    public CompletableFuture<Void> prepareAsync(final MemorySegment preparedStatement) {
+        final var result = new CompletableFuture<Void>();
+
+        executor.submit(() -> {
+            try {
+                final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+                for (int i = 0; i < maxPoolSize; i++) {
+                    if (locks[i] != null) {
+                        try {
+                            locks[i].acquire();
+                            prepareAsync(connections[i], preparedStatement, stmtName);
+                        } catch (Throwable th) {
+                            result.completeExceptionally(th);
+                            break;
+                        } finally {
+                            locks[i].release();
+                        }
+                    }
+                }
+
+                if (!result.isCompletedExceptionally()) result.complete(null);
+            } catch (RuntimeException ex) {
+                result.completeExceptionally(ex);
+            }
+        });
+
+        return result;
+    }
+
+    public CompletableFuture<Integer> executeAsync(final MemorySegment preparedStatement) {
+        final var result = new CompletableFuture<Integer>();
+
+        executor.submit(() -> {
+            try {
+                final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+                final var conn = connections[availableIndex];
+                var connReleased = false;
+
+                try {
+                    if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
+                        final var res = loopGetResult(conn);
+                        try {
+                            // Release as soon as possible.
+                            locks[availableIndex].release();
+                            connReleased = true;
+
+                            final var status = pqx.resultStatus(res);
+                            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                                result.complete(pqx.cmdTuplesInt(res));
+                            } else {
+                                result.completeExceptionally(new RuntimeException(String.format("status returned by database server was %s", status)));
+                            }
+                        } finally {
+                            pqx.clear(res);
+                        }
+                    } else {
+                        result.completeExceptionally(new RuntimeException("could not submit query"));
+                    }
+                } catch (Throwable th) {
+                    result.completeExceptionally(th);
+                } finally {
+                    if (!connReleased) locks[availableIndex].release();
+                }
+            } catch (TimeoutException ex) {
+                result.completeExceptionally(ex);
+            }
+        });
+
+        return result;
+    }
 
     public CompletableFuture<Integer> prepareThenExecuteAsync(final MemorySegment preparedStatement) {
         final var result = new CompletableFuture<Integer>();
@@ -84,22 +154,22 @@ public class AsyncPQCP extends PQCP {
                     prepareAsync(conn, preparedStatement, stmtName);
                     if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
                         final var res = loopGetResult(conn);
-                        // Release as soon as possible.
-                        locks[availableIndex].release();
-                        connReleased = true;
-
                         try {
+                            // Release as soon as possible.
+                            locks[availableIndex].release();
+                            connReleased = true;
+
                             final var status = pqx.resultStatus(res);
                             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                                 result.complete(pqx.cmdTuplesInt(res));
                             } else {
-                                throw new RuntimeException(String.format("status returned by database server was %s", status));
+                                result.completeExceptionally(new RuntimeException(String.format("status returned by database server was %s", status)));
                             }
                         } finally {
                             pqx.clear(res);
                         }
                     } else {
-                        throw new RuntimeException("could not submit query");
+                        result.completeExceptionally(new RuntimeException("could not submit query"));
                     }
                 } catch (Throwable th) {
                     result.completeExceptionally(th);
@@ -113,7 +183,6 @@ public class AsyncPQCP extends PQCP {
 
         return result;
     }
-
 
     private void prepareAsync(final MemorySegment conn, final MemorySegment preparedStatement,
                               final MemorySegment stmtName) throws Throwable {
