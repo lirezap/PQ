@@ -248,12 +248,12 @@ public class AsyncPQCP extends PQCP {
 
         executor.submit(() -> {
             try {
+                final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
                 final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
                 final var conn = connections[availableIndex];
                 var connReleased = false;
 
                 try {
-                    final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
                     prepareAsync(conn, preparedStatement, stmtName);
                     final var sent =
                             text ?
