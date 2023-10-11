@@ -184,6 +184,110 @@ public class AsyncPQCP extends PQCP {
         return result;
     }
 
+    public CompletableFuture<MemorySegment> fetchTextResultAsync(final MemorySegment preparedStatement) {
+        return fetchAsync(preparedStatement, true);
+    }
+
+    public CompletableFuture<MemorySegment> prepareThenFetchTextResultAsync(final MemorySegment preparedStatement) {
+        return prepareThenFetchAsync(preparedStatement, true);
+    }
+
+    public CompletableFuture<MemorySegment> fetchBinaryResultAsync(final MemorySegment preparedStatement) {
+        return fetchAsync(preparedStatement, false);
+    }
+
+    public CompletableFuture<MemorySegment> prepareThenFetchBinaryResultAsync(final MemorySegment preparedStatement) {
+        return prepareThenFetchAsync(preparedStatement, false);
+    }
+
+    private CompletableFuture<MemorySegment> fetchAsync(final MemorySegment preparedStatement, final boolean text) {
+        final var result = new CompletableFuture<MemorySegment>();
+
+        executor.submit(() -> {
+            try {
+                final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+                final var conn = connections[availableIndex];
+                var connReleased = false;
+
+                try {
+                    final var sent =
+                            text ?
+                                    pqx.sendQueryPreparedTextResult(conn, preparedStatement) :
+                                    pqx.sendQueryPreparedBinaryResult(conn, preparedStatement);
+
+                    if (sent) {
+                        final var res = loopGetResult(conn);
+                        // Release as soon as possible.
+                        locks[availableIndex].release();
+                        connReleased = true;
+
+                        final var status = pqx.resultStatus(res);
+                        if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                            result.complete(res);
+                        } else {
+                            result.completeExceptionally(new RuntimeException(String.format("status returned by database server was %s", status)));
+                        }
+                    } else {
+                        result.completeExceptionally(new RuntimeException("could not submit query"));
+                    }
+                } catch (Throwable th) {
+                    result.completeExceptionally(th);
+                } finally {
+                    if (!connReleased) locks[availableIndex].release();
+                }
+            } catch (TimeoutException ex) {
+                result.completeExceptionally(ex);
+            }
+        });
+
+        return result;
+    }
+
+    private CompletableFuture<MemorySegment> prepareThenFetchAsync(final MemorySegment preparedStatement, final boolean text) {
+        final var result = new CompletableFuture<MemorySegment>();
+
+        executor.submit(() -> {
+            try {
+                final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+                final var conn = connections[availableIndex];
+                var connReleased = false;
+
+                try {
+                    final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+                    prepareAsync(conn, preparedStatement, stmtName);
+                    final var sent =
+                            text ?
+                                    pqx.sendQueryPreparedTextResult(conn, preparedStatement) :
+                                    pqx.sendQueryPreparedBinaryResult(conn, preparedStatement);
+
+                    if (sent) {
+                        final var res = loopGetResult(conn);
+                        // Release as soon as possible.
+                        locks[availableIndex].release();
+                        connReleased = true;
+
+                        final var status = pqx.resultStatus(res);
+                        if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                            result.complete(res);
+                        } else {
+                            result.completeExceptionally(new RuntimeException(String.format("status returned by database server was %s", status)));
+                        }
+                    } else {
+                        result.completeExceptionally(new RuntimeException("could not submit query"));
+                    }
+                } catch (Throwable th) {
+                    result.completeExceptionally(th);
+                } finally {
+                    if (!connReleased) locks[availableIndex].release();
+                }
+            } catch (TimeoutException | RuntimeException ex) {
+                result.completeExceptionally(ex);
+            }
+        });
+
+        return result;
+    }
+
     private void prepareAsync(final MemorySegment conn, final MemorySegment preparedStatement,
                               final MemorySegment stmtName) throws Throwable {
 
