@@ -38,32 +38,51 @@ import static ir.jibit.pq.layouts.PreparedStatement.PreparedStatement_stmtName_v
 public class AsyncPQCP extends PQCP {
     private final ExecutorService executor;
 
-    public AsyncPQCP(Path path, String connInfo, ExecutorService executor) throws Exception {
+    public AsyncPQCP(final Path path,
+                     final String connInfo,
+                     final ExecutorService executor) throws Exception {
+
         super(path, connInfo);
         this.executor = executor;
     }
 
-    public AsyncPQCP(Path path, String connInfo, int minPoolSize, ExecutorService executor) throws Exception {
+    public AsyncPQCP(final Path path,
+                     final String connInfo,
+                     final int minPoolSize,
+                     final ExecutorService executor) throws Exception {
+
         super(path, connInfo, minPoolSize);
         this.executor = executor;
     }
 
-    public AsyncPQCP(Path path, String connInfo, int minPoolSize, int maxPoolSize,
-                     ExecutorService executor) throws Exception {
+    public AsyncPQCP(final Path path,
+                     final String connInfo,
+                     final int minPoolSize,
+                     final int maxPoolSize,
+                     final ExecutorService executor) throws Exception {
 
         super(path, connInfo, minPoolSize, maxPoolSize);
         this.executor = executor;
     }
 
-    public AsyncPQCP(Path path, String connInfo, int minPoolSize, int maxPoolSize, Duration connectTimeout,
-                     ExecutorService executor) throws Exception {
+    public AsyncPQCP(final Path path,
+                     final String connInfo,
+                     final int minPoolSize,
+                     final int maxPoolSize,
+                     final Duration connectTimeout,
+                     final ExecutorService executor) throws Exception {
 
         super(path, connInfo, minPoolSize, maxPoolSize, connectTimeout);
         this.executor = executor;
     }
 
-    public AsyncPQCP(Path path, String connInfo, int minPoolSize, int maxPoolSize, Duration connectTimeout,
-                     int makeNewConnectionCoefficient, ExecutorService executor) throws Exception {
+    public AsyncPQCP(final Path path,
+                     final String connInfo,
+                     final int minPoolSize,
+                     final int maxPoolSize,
+                     final Duration connectTimeout,
+                     final int makeNewConnectionCoefficient,
+                     final ExecutorService executor) throws Exception {
 
         super(path, connInfo, minPoolSize, maxPoolSize, connectTimeout, makeNewConnectionCoefficient);
         this.executor = executor;
@@ -200,7 +219,9 @@ public class AsyncPQCP extends PQCP {
         return prepareThenFetchAsync(preparedStatement, false);
     }
 
-    private CompletableFuture<MemorySegment> fetchAsync(final MemorySegment preparedStatement, final boolean text) {
+    private CompletableFuture<MemorySegment> fetchAsync(final MemorySegment preparedStatement,
+                                                        final boolean text) {
+
         final var result = new CompletableFuture<MemorySegment>();
 
         executor.submit(() -> {
@@ -243,7 +264,9 @@ public class AsyncPQCP extends PQCP {
         return result;
     }
 
-    private CompletableFuture<MemorySegment> prepareThenFetchAsync(final MemorySegment preparedStatement, final boolean text) {
+    private CompletableFuture<MemorySegment> prepareThenFetchAsync(final MemorySegment preparedStatement,
+                                                                   final boolean text) {
+
         final var result = new CompletableFuture<MemorySegment>();
 
         executor.submit(() -> {
@@ -288,7 +311,8 @@ public class AsyncPQCP extends PQCP {
         return result;
     }
 
-    private void prepareAsync(final MemorySegment conn, final MemorySegment preparedStatement,
+    private void prepareAsync(final MemorySegment conn,
+                              final MemorySegment preparedStatement,
                               final MemorySegment stmtName) throws Throwable {
 
         if (pqx.sendDescribePrepared(conn, stmtName)) {
