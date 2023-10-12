@@ -112,11 +112,13 @@ public class PQCP implements AutoCloseable {
     }
 
     public void prepare(final MemorySegment preparedStatement) throws RuntimeException {
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+
         for (int i = 0; i < maxPoolSize; i++) {
             if (locks[i] != null) {
                 try {
                     locks[i].acquire();
-                    pqx.prepare(connections[i], preparedStatement);
+                    prepare(connections[i], preparedStatement, stmtName);
                 } catch (Throwable th) {
                     throw new RuntimeException(th);
                 } finally {
