@@ -91,7 +91,9 @@ public final class PQX extends PQ {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">See official doc for more information.</a>
      */
-    public MemorySegment exec(final MemorySegment conn, final String command) throws Throwable {
+    public MemorySegment exec(final MemorySegment conn,
+                              final String command) throws Throwable {
+
         try (final var arena = Arena.ofConfined()) {
             return exec(conn, arena.allocateUtf8String(command));
         }
@@ -100,7 +102,9 @@ public final class PQX extends PQ {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">See official doc for more information.</a>
      */
-    public MemorySegment prepare(final MemorySegment conn, final MemorySegment preparedStatement) throws Throwable {
+    public MemorySegment prepare(final MemorySegment conn,
+                                 final MemorySegment preparedStatement) throws Throwable {
+
         final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
         final var query = (MemorySegment) PreparedStatement_query_varHandle.get(preparedStatement);
         final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatement);
@@ -156,7 +160,9 @@ public final class PQX extends PQ {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNAME">See official doc for more information.</a>
      */
-    public Optional<String> fNameOptionalString(final MemorySegment res, int columnNumber) throws Throwable {
+    public Optional<String> fNameOptionalString(final MemorySegment res,
+                                                int columnNumber) throws Throwable {
+
         final var name = fName(res, columnNumber);
         if (!name.equals(NULL)) {
             return Optional.of(name.reinterpret(64).getUtf8String(0));
@@ -168,7 +174,9 @@ public final class PQX extends PQ {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNUMBER">See official doc for more information.</a>
      */
-    public Optional<Integer> fNumberOptional(final MemorySegment res, final String columnName) throws Throwable {
+    public Optional<Integer> fNumberOptional(final MemorySegment res,
+                                             final String columnName) throws Throwable {
+
         try (final var arena = Arena.ofConfined()) {
             final var number = fNumber(res, arena.allocateUtf8String(columnName));
             if (number != -1) {
@@ -194,7 +202,9 @@ public final class PQX extends PQ {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDPREPARE">See official doc for more information.</a>
      */
-    public boolean sendPrepare(final MemorySegment conn, final MemorySegment preparedStatement) throws Throwable {
+    public boolean sendPrepare(final MemorySegment conn,
+                               final MemorySegment preparedStatement) throws Throwable {
+
         final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
         final var query = (MemorySegment) PreparedStatement_query_varHandle.get(preparedStatement);
         final var nParams = (int) PreparedStatement_nParams_varHandle.get(preparedStatement);
@@ -248,7 +258,9 @@ public final class PQX extends PQ {
      * @return optional value associated to provided keyword
      * @throws Throwable in case of errors
      */
-    public Optional<String> getConnectionOptionValue(final MemorySegment conn, final String keyword) throws Throwable {
+    public Optional<String> getConnectionOptionValue(final MemorySegment conn,
+                                                     final String keyword) throws Throwable {
+
         final var ptr = connInfoOptional(conn).orElseThrow();
 
         try {

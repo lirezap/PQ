@@ -294,14 +294,18 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">See official doc for more information.</a>
      */
-    public MemorySegment exec(final MemorySegment conn, final MemorySegment command) throws Throwable {
+    public MemorySegment exec(final MemorySegment conn,
+                              final MemorySegment command) throws Throwable {
+
         return (MemorySegment) execHandle.invokeExact(conn, command);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">See official doc for more information.</a>
      */
-    public MemorySegment prepare(final MemorySegment conn, final MemorySegment stmtName, final MemorySegment query,
+    public MemorySegment prepare(final MemorySegment conn,
+                                 final MemorySegment stmtName,
+                                 final MemorySegment query,
                                  final int nParams) throws Throwable {
 
         return (MemorySegment) prepareHandle.invokeExact(conn, stmtName, query, nParams, NULL);
@@ -310,9 +314,13 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">See official doc for more information.</a>
      */
-    public MemorySegment execPrepared(final MemorySegment conn, final MemorySegment stmtName, final int nParams,
-                                      final MemorySegment paramValues, final MemorySegment paramLengths,
-                                      final MemorySegment paramFormats, final int resultFormat) throws Throwable {
+    public MemorySegment execPrepared(final MemorySegment conn,
+                                      final MemorySegment stmtName,
+                                      final int nParams,
+                                      final MemorySegment paramValues,
+                                      final MemorySegment paramLengths,
+                                      final MemorySegment paramFormats,
+                                      final int resultFormat) throws Throwable {
 
         return (MemorySegment) execPreparedHandle.invokeExact(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, resultFormat);
     }
@@ -320,7 +328,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQDESCRIBEPREPARED">See official doc for more information.</a>
      */
-    public MemorySegment describePrepared(final MemorySegment conn, final MemorySegment stmtName) throws Throwable {
+    public MemorySegment describePrepared(final MemorySegment conn,
+                                          final MemorySegment stmtName) throws Throwable {
+
         return (MemorySegment) describePreparedHandle.invokeExact(conn, stmtName);
     }
 
@@ -390,21 +400,27 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNAME">See official doc for more information.</a>
      */
-    public MemorySegment fName(final MemorySegment res, final int columnNumber) throws Throwable {
+    public MemorySegment fName(final MemorySegment res,
+                               final int columnNumber) throws Throwable {
+
         return (MemorySegment) fNameHandle.invokeExact(res, columnNumber);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNUMBER">See official doc for more information.</a>
      */
-    public int fNumber(final MemorySegment res, final MemorySegment columnName) throws Throwable {
+    public int fNumber(final MemorySegment res,
+                       final MemorySegment columnName) throws Throwable {
+
         return (int) fNumberHandle.invokeExact(res, columnName);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFFORMAT">See official doc for more information.</a>
      */
-    public FieldFormat fFormat(final MemorySegment res, final int columnNumber) throws Throwable {
+    public FieldFormat fFormat(final MemorySegment res,
+                               final int columnNumber) throws Throwable {
+
         switch ((int) fFormatHandle.invokeExact(res, columnNumber)) {
             case 0:
                 return FieldFormat.TEXT;
@@ -419,29 +435,38 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFTYPE">See official doc for more information.</a>
      */
-    public int fType(final MemorySegment res, final int columnNumber) throws Throwable {
-        // TODO: We need to return enum type here instead of int.
+    public int fType(final MemorySegment res,
+                     final int columnNumber) throws Throwable {
+
         return (int) fTypeHandle.invokeExact(res, columnNumber);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFMOD">See official doc for more information.</a>
      */
-    public int fMod(final MemorySegment res, final int columnNumber) throws Throwable {
+    public int fMod(final MemorySegment res,
+                    final int columnNumber) throws Throwable {
+
         return (int) fModHandle.invokeExact(res, columnNumber);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQGETVALUE">See official doc for more information.</a>
      */
-    public MemorySegment getValue(final MemorySegment res, final int rowNumber, final int columnNumber) throws Throwable {
+    public MemorySegment getValue(final MemorySegment res,
+                                  final int rowNumber,
+                                  final int columnNumber) throws Throwable {
+
         return (MemorySegment) getValueHandle.invokeExact(res, rowNumber, columnNumber);
     }
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQGETISNULL">See official doc for more information.</a>
      */
-    public boolean getIsNull(final MemorySegment res, final int rowNumber, final int columnNumber) throws Throwable {
+    public boolean getIsNull(final MemorySegment res,
+                             final int rowNumber,
+                             final int columnNumber) throws Throwable {
+
         switch ((int) getIsNullHandle.invokeExact(res, rowNumber, columnNumber)) {
             case 0:
                 return false;
@@ -453,7 +478,10 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQGETLENGTH">See official doc for more information.</a>
      */
-    public int getLength(final MemorySegment res, final int rowNumber, final int columnNumber) throws Throwable {
+    public int getLength(final MemorySegment res,
+                         final int rowNumber,
+                         final int columnNumber) throws Throwable {
+
         return (int) getLengthHandle.invokeExact(res, rowNumber, columnNumber);
     }
 
@@ -467,7 +495,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDQUERY">See official doc for more information.</a>
      */
-    public boolean sendQuery(final MemorySegment conn, final MemorySegment command) throws Throwable {
+    public boolean sendQuery(final MemorySegment conn,
+                             final MemorySegment command) throws Throwable {
+
         switch ((int) sendQueryHandle.invokeExact(conn, command)) {
             case 0:
                 return false;
@@ -479,7 +509,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDPREPARE">See official doc for more information.</a>
      */
-    public boolean sendPrepare(final MemorySegment conn, final MemorySegment stmtName, final MemorySegment query,
+    public boolean sendPrepare(final MemorySegment conn,
+                               final MemorySegment stmtName,
+                               final MemorySegment query,
                                final int nParams) throws Throwable {
 
         switch ((int) sendPrepareHandle.invokeExact(conn, stmtName, query, nParams, NULL)) {
@@ -493,9 +525,13 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDQUERYPREPARED">See official doc for more information.</a>
      */
-    public boolean sendQueryPrepared(final MemorySegment conn, final MemorySegment stmtName, final int nParams,
-                                     final MemorySegment paramValues, final MemorySegment paramLengths,
-                                     final MemorySegment paramFormats, final int resultFormat) throws Throwable {
+    public boolean sendQueryPrepared(final MemorySegment conn,
+                                     final MemorySegment stmtName,
+                                     final int nParams,
+                                     final MemorySegment paramValues,
+                                     final MemorySegment paramLengths,
+                                     final MemorySegment paramFormats,
+                                     final int resultFormat) throws Throwable {
 
         switch ((int) sendQueryPreparedHandle.invokeExact(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, resultFormat)) {
             case 0:
@@ -508,7 +544,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDDESCRIBEPREPARED">See official doc for more information.</a>
      */
-    public boolean sendDescribePrepared(final MemorySegment conn, final MemorySegment stmtName) throws Throwable {
+    public boolean sendDescribePrepared(final MemorySegment conn,
+                                        final MemorySegment stmtName) throws Throwable {
+
         switch ((int) sendDescribePreparedHandle.invokeExact(conn, stmtName)) {
             case 0:
                 return false;
