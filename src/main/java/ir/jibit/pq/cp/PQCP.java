@@ -49,7 +49,7 @@ public class PQCP implements AutoCloseable {
     public static final int DEFAULT_MIN_POOL_SIZE = 10;
     public static final int DEFAULT_MAX_POOL_SIZE = 25;
     public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
-    public static final int DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT = 100;
+    public static final int DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT = 10;
 
     protected final int minPoolSize;
     protected final int maxPoolSize;
@@ -306,7 +306,7 @@ public class PQCP implements AutoCloseable {
                 }
             }
 
-            if (tryCount % 1000 == 0) Thread.sleep(1);
+            if (tryCount % maxPoolSize == 0) Thread.sleep(1);
         } catch (Exception ex) {
             // Do nothing!
         }
@@ -332,6 +332,7 @@ public class PQCP implements AutoCloseable {
                     final var lock = locks[atIndex];
                     locks[atIndex] = null;
                     lock.release();
+                    return;
                 }
 
                 logger.info(String.format("extended pool size to have %d connections to handle more queries", atIndex + 1));
