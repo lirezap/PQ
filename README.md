@@ -11,6 +11,93 @@ class of this library. AsyncPQCP is the asynchronous version of PQCP that can be
 
 ---
 
+#### Benchmark
+
+To benchmark the library, I used the following table definition:
+
+```text
+-- event table definition.
+CREATE TABLE event (
+    id           UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    type         VARCHAR(64) NOT NULL,
+    metadata     VARCHAR(1024),
+    entity_table VARCHAR(64),
+    entity_id    UUID,
+    ts           TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE INDEX event_ts_index ON event (ts DESC);
+CREATE INDEX event_type_ts_index ON event (type, ts DESC);
+CREATE INDEX event_entity_id_ts_index ON event (entity_id, ts DESC);
+CREATE INDEX event_type_entity_id_ts_index ON event (type, entity_id, ts DESC);
+```
+
+Then measured important database actions with different setups of PQCP (or it async equivalent).
+
+MacBook Air M1, with postgresql version 15 as docker container with default configuration:
+
+`insertEvents: [count: 1000, parallelism: 10, minPoolSize: 10, maxPoolSize: 25] took 246 ms.`
+
+`insertEvents: [count: 2000, parallelism: 10, minPoolSize: 10, maxPoolSize: 25] took 446 ms.`
+
+`insertEvents: [count: 3000, parallelism: 10, minPoolSize: 10, maxPoolSize: 25] took 687 ms.`
+
+`insertEvents: [count: 4000, parallelism: 10, minPoolSize: 10, maxPoolSize: 25] took 864 ms.`
+
+`insertEvents: [count: 5000, parallelism: 10, minPoolSize: 10, maxPoolSize: 25] took 1086 ms.`
+
+`insertEvents: [count: 1000, parallelism: 25, minPoolSize: 25, maxPoolSize: 25] took 147 ms.`
+
+`insertEvents: [count: 2000, parallelism: 25, minPoolSize: 25, maxPoolSize: 25] took 316 ms.`
+
+`insertEvents: [count: 3000, parallelism: 25, minPoolSize: 25, maxPoolSize: 25] took 396 ms.`
+
+`insertEvents: [count: 4000, parallelism: 25, minPoolSize: 25, maxPoolSize: 25] took 550 ms.`
+
+`insertEvents: [count: 5000, parallelism: 25, minPoolSize: 25, maxPoolSize: 25] took 651 ms.`
+
+`insertEvents: [count: 1000, parallelism: 25, minPoolSize: 50, maxPoolSize: 50] took 147 ms.`
+
+`insertEvents: [count: 2000, parallelism: 25, minPoolSize: 50, maxPoolSize: 50] took 252 ms.`
+
+`insertEvents: [count: 3000, parallelism: 25, minPoolSize: 50, maxPoolSize: 50] took 424 ms.`
+
+`insertEvents: [count: 4000, parallelism: 25, minPoolSize: 50, maxPoolSize: 50] took 503 ms.`
+
+`insertEvents: [count: 5000, parallelism: 25, minPoolSize: 50, maxPoolSize: 50] took 612 ms.`
+
+`insertEventsAsync: [count: 1000, executor-size: 10, minPoolSize: 10, maxPoolSize: 25] took 312 ms.`
+
+`insertEventsAsync: [count: 2000, executor-size: 10, minPoolSize: 10, maxPoolSize: 25] took 524 ms.`
+
+`insertEventsAsync: [count: 3000, executor-size: 10, minPoolSize: 10, maxPoolSize: 25] took 741 ms.`
+
+`insertEventsAsync: [count: 4000, executor-size: 10, minPoolSize: 10, maxPoolSize: 25] took 1015 ms.`
+
+`insertEventsAsync: [count: 5000, executor-size: 10, minPoolSize: 10, maxPoolSize: 25] took 1187 ms.`
+
+`insertEventsAsync: [count: 1000, executor-size: 25, minPoolSize: 25, maxPoolSize: 25] took 203 ms.`
+
+`insertEventsAsync: [count: 2000, executor-size: 25, minPoolSize: 25, maxPoolSize: 25] took 338 ms.`
+
+`insertEventsAsync: [count: 3000, executor-size: 25, minPoolSize: 25, maxPoolSize: 25] took 421 ms.`
+
+`insertEventsAsync: [count: 4000, executor-size: 25, minPoolSize: 25, maxPoolSize: 25] took 580 ms.`
+
+`insertEventsAsync: [count: 5000, executor-size: 25, minPoolSize: 25, maxPoolSize: 25] took 737 ms.`
+
+`insertEventsAsync: [count: 1000, executor-size: 50, minPoolSize: 50, maxPoolSize: 50] took 145 ms.`
+
+`insertEventsAsync: [count: 2000, executor-size: 50, minPoolSize: 50, maxPoolSize: 50] took 240 ms.`
+
+`insertEventsAsync: [count: 3000, executor-size: 50, minPoolSize: 50, maxPoolSize: 50] took 360 ms.`
+
+`insertEventsAsync: [count: 4000, executor-size: 50, minPoolSize: 50, maxPoolSize: 50] took 455 ms.`
+
+`insertEventsAsync: [count: 5000, executor-size: 50, minPoolSize: 50, maxPoolSize: 50] took 561 ms.`
+
+---
+
 #### Build Library
 
 First of all you need to clone the library using:
