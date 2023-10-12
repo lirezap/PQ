@@ -14,7 +14,7 @@
 
     <groupId>ir.jibit</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.24</version>
+    <version>0.0.25</version>
     <name>pq</name>
     <description>Native postgresql access using FFM</description>
 
