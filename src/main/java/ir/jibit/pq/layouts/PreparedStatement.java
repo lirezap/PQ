@@ -73,14 +73,17 @@ public final class PreparedStatement {
      * @param arena memory arena
      * @return a new created memory segment for a new prepared statement
      */
-    public static MemorySegment create(final Arena arena) {
+    public static MemorySegment create(
+            final Arena arena) {
+
         requireNonNull(arena);
         return arena.allocate(PreparedStatement);
     }
 
-    public static void setStmtName(final Arena arena,
-                                   final MemorySegment preparedStatement,
-                                   final String stmtName) {
+    public static void setStmtName(
+            final Arena arena,
+            final MemorySegment preparedStatement,
+            final String stmtName) {
 
         requireNonNull(arena);
         requireNonNull(preparedStatement);
@@ -88,9 +91,10 @@ public final class PreparedStatement {
         PreparedStatement_stmtName_varHandle.set(preparedStatement, arena.allocateUtf8String(stmtName));
     }
 
-    public static void setQuery(final Arena arena,
-                                final MemorySegment preparedStatement,
-                                final String query) {
+    public static void setQuery(
+            final Arena arena,
+            final MemorySegment preparedStatement,
+            final String query) {
 
         requireNonNull(arena);
         requireNonNull(preparedStatement);
@@ -98,9 +102,10 @@ public final class PreparedStatement {
         PreparedStatement_query_varHandle.set(preparedStatement, arena.allocateUtf8String(query));
     }
 
-    public static void addTextValue(final Arena arena,
-                                    final MemorySegment preparedStatement,
-                                    final String value) {
+    public static void addTextValue(
+            final Arena arena,
+            final MemorySegment preparedStatement,
+            final String value) {
 
         requireNonNull(arena);
         requireNonNull(preparedStatement);

@@ -63,8 +63,9 @@ public class PQCP implements AutoCloseable {
     protected final MemorySegment[] connections;
     protected final Semaphore[] locks;
 
-    public PQCP(final Path path,
-                final String connInfo) throws Exception {
+    public PQCP(
+            final Path path,
+            final String connInfo) throws Exception {
 
         this(path,
                 connInfo,
@@ -74,9 +75,10 @@ public class PQCP implements AutoCloseable {
                 DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
-    public PQCP(final Path path,
-                final String connInfo,
-                final int minPoolSize) throws Exception {
+    public PQCP(
+            final Path path,
+            final String connInfo,
+            final int minPoolSize) throws Exception {
 
         this(path,
                 connInfo,
@@ -86,10 +88,11 @@ public class PQCP implements AutoCloseable {
                 DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
-    public PQCP(final Path path,
-                final String connInfo,
-                final int minPoolSize,
-                final int maxPoolSize) throws Exception {
+    public PQCP(
+            final Path path,
+            final String connInfo,
+            final int minPoolSize,
+            final int maxPoolSize) throws Exception {
 
         this(path,
                 connInfo,
@@ -99,11 +102,12 @@ public class PQCP implements AutoCloseable {
                 DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
-    public PQCP(final Path path,
-                final String connInfo,
-                final int minPoolSize,
-                final int maxPoolSize,
-                final Duration connectTimeout) throws Exception {
+    public PQCP(
+            final Path path,
+            final String connInfo,
+            final int minPoolSize,
+            final int maxPoolSize,
+            final Duration connectTimeout) throws Exception {
 
         this(path,
                 connInfo,
@@ -113,12 +117,13 @@ public class PQCP implements AutoCloseable {
                 DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
     }
 
-    public PQCP(final Path path,
-                final String connInfo,
-                final int minPoolSize,
-                final int maxPoolSize,
-                final Duration connectTimeout,
-                final int makeNewConnectionCoefficient) throws Exception {
+    public PQCP(
+            final Path path,
+            final String connInfo,
+            final int minPoolSize,
+            final int maxPoolSize,
+            final Duration connectTimeout,
+            final int makeNewConnectionCoefficient) throws Exception {
 
         if (minPoolSize > maxPoolSize) {
             throw new IllegalArgumentException("minPoolSize > maxPoolSize");
@@ -147,9 +152,10 @@ public class PQCP implements AutoCloseable {
         logBasicServerInfo(this);
     }
 
-    public void prepare(final MemorySegment preparedStatement) {
-        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+    public void prepare(
+            final MemorySegment preparedStatement) {
 
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
         for (int i = 0; i < maxPoolSize; i++) {
             if (locks[i] != null) {
                 try {
@@ -164,7 +170,9 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    public int execute(final MemorySegment preparedStatement) throws TimeoutException {
+    public int execute(
+            final MemorySegment preparedStatement) throws TimeoutException {
+
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
         final var conn = connections[availableIndex];
         var connReleased = false;
@@ -192,7 +200,9 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    public int prepareThenExecute(final MemorySegment preparedStatement) throws TimeoutException {
+    public int prepareThenExecute(
+            final MemorySegment preparedStatement) throws TimeoutException {
+
         final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
         final var conn = connections[availableIndex];
@@ -222,23 +232,33 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    public MemorySegment fetchTextResult(final MemorySegment preparedStatement) throws TimeoutException {
+    public MemorySegment fetchTextResult(
+            final MemorySegment preparedStatement) throws TimeoutException {
+
         return fetch(preparedStatement, true);
     }
 
-    public MemorySegment prepareThenFetchTextResult(final MemorySegment preparedStatement) throws TimeoutException {
+    public MemorySegment prepareThenFetchTextResult(
+            final MemorySegment preparedStatement) throws TimeoutException {
+
         return prepareThenFetch(preparedStatement, true);
     }
 
-    public MemorySegment fetchBinaryResult(final MemorySegment preparedStatement) throws TimeoutException {
+    public MemorySegment fetchBinaryResult(
+            final MemorySegment preparedStatement) throws TimeoutException {
+
         return fetch(preparedStatement, false);
     }
 
-    public MemorySegment prepareThenFetchBinaryResult(final MemorySegment preparedStatement) throws TimeoutException {
+    public MemorySegment prepareThenFetchBinaryResult(
+            final MemorySegment preparedStatement) throws TimeoutException {
+
         return prepareThenFetch(preparedStatement, false);
     }
 
-    public void clear(final MemorySegment res) {
+    public void clear(
+            final MemorySegment res) {
+
         try {
             pqx.clear(res);
         } catch (Throwable th) {
@@ -246,8 +266,9 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    private MemorySegment fetch(final MemorySegment preparedStatement,
-                                final boolean text) throws TimeoutException {
+    private MemorySegment fetch(
+            final MemorySegment preparedStatement,
+            final boolean text) throws TimeoutException {
 
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
         final var conn = connections[availableIndex];
@@ -275,8 +296,9 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    private MemorySegment prepareThenFetch(final MemorySegment preparedStatement,
-                                           final boolean text) throws TimeoutException {
+    private MemorySegment prepareThenFetch(
+            final MemorySegment preparedStatement,
+            final boolean text) throws TimeoutException {
 
         final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
@@ -306,9 +328,10 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    private void prepare(final MemorySegment conn,
-                         final MemorySegment preparedStatement,
-                         final MemorySegment stmtName) throws Throwable {
+    private void prepare(
+            final MemorySegment conn,
+            final MemorySegment preparedStatement,
+            final MemorySegment stmtName) throws Throwable {
 
         var res = pqx.describePrepared(conn, stmtName);
         if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
@@ -320,9 +343,10 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    protected int getAvailableConnectionIndexLocked(final boolean incrementNotAvailability,
-                                                    final long start,
-                                                    int tryCount) throws TimeoutException {
+    protected int getAvailableConnectionIndexLocked(
+            final boolean incrementNotAvailability,
+            final long start,
+            int tryCount) throws TimeoutException {
 
         if (System.nanoTime() - start >= connectTimeout.toNanos()) {
             throw new TimeoutException(String.format("timeout of %d ms occurred while getting connection from pool", connectTimeout.toMillis()));
@@ -355,7 +379,9 @@ public class PQCP implements AutoCloseable {
         return getAvailableConnectionIndexLocked(false, start, tryCount + 1);
     }
 
-    private synchronized void makeNewConnection(final int atIndex) {
+    private synchronized void makeNewConnection(
+            final int atIndex) {
+
         if (atIndex < maxPoolSize && locks[atIndex] == null) {
             try {
                 final var newLock = new Semaphore(1);
@@ -389,7 +415,9 @@ public class PQCP implements AutoCloseable {
         }
     }
 
-    private static boolean connect(final PQCP cp) throws Exception {
+    private static boolean connect(
+            final PQCP cp) throws Exception {
+
         final var arena = Arena.ofShared();
         final var connInfoMemorySegment = arena.allocateUtf8String(cp.connInfo);
         final var counter = new CountDownLatch(cp.minPoolSize);
@@ -424,7 +452,9 @@ public class PQCP implements AutoCloseable {
         return connected.get();
     }
 
-    private static void logBasicServerInfo(final PQCP cp) {
+    private static void logBasicServerInfo(
+            final PQCP cp) {
+
         try {
             cp.locks[0].acquire();
 
