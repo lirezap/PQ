@@ -49,14 +49,14 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final Arena memory;
 
     /**
-     * Library symbols; including functions and variables.
-     */
-    private final SymbolLookup lib;
-
-    /**
      * Native linker.
      */
     private final Linker linker;
+
+    /**
+     * Library symbols; including functions and variables.
+     */
+    private final SymbolLookup lib;
 
     // Database Connection Control Functions
     private final MethodHandle connectDBHandle;
@@ -110,8 +110,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
         this.path = path;
         this.memory = Arena.ofShared();
-        this.lib = SymbolLookup.libraryLookup(path, memory);
         this.linker = Linker.nativeLinker();
+        this.lib = SymbolLookup.libraryLookup(path, memory);
 
         // Database Connection Control Functions
         this.connectDBHandle = linker.downcallHandle(lib.find(FUNCTION.PQconnectdb.name()).orElseThrow(), FUNCTION.PQconnectdb.fd);
