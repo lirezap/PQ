@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static ir.jibit.pq.layouts.PQConnInfoOption.*;
 import static ir.jibit.pq.layouts.PreparedStatement.*;
+import static ir.jibit.pq.std.CString.strlen;
 import static java.lang.foreign.MemorySegment.NULL;
 
 /**
@@ -170,7 +171,8 @@ public final class PQX extends PQ {
     public String resultErrorMessageString(
             final MemorySegment res) throws Throwable {
 
-        return resultErrorMessage(res).reinterpret(256).getUtf8String(0);
+        final var resultErrorMessage = resultErrorMessage(res);
+        return resultErrorMessage.reinterpret(strlen(resultErrorMessage) + 1).getUtf8String(0);
     }
 
     /**
@@ -178,11 +180,11 @@ public final class PQX extends PQ {
      */
     public Optional<String> fNameOptionalString(
             final MemorySegment res,
-            int columnNumber) throws Throwable {
+            final int columnNumber) throws Throwable {
 
         final var name = fName(res, columnNumber);
         if (!name.equals(NULL)) {
-            return Optional.of(name.reinterpret(64).getUtf8String(0));
+            return Optional.of(name.reinterpret(strlen(name) + 1).getUtf8String(0));
         }
 
         return Optional.empty();
@@ -211,7 +213,8 @@ public final class PQX extends PQ {
     public int cmdTuplesInt(
             final MemorySegment res) throws Throwable {
 
-        var countString = cmdTuples(res).reinterpret(10).getUtf8String(0);
+        final var cmdTuples = cmdTuples(res);
+        final var countString = cmdTuples.reinterpret(strlen(cmdTuples) + 1).getUtf8String(0);
         if (!countString.isBlank()) {
             return Integer.parseInt(countString);
         }
@@ -292,11 +295,11 @@ public final class PQX extends PQ {
                 final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
 
                 if (!keywordPtr.equals(NULL)) {
-                    if (keywordPtr.reinterpret(128).getUtf8String(0).equals(keyword)) {
+                    if (keywordPtr.reinterpret(strlen(keywordPtr) + 1).getUtf8String(0).equals(keyword)) {
                         final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
                         if (!valPtr.equals(NULL)) {
                             // Found keyword and has value.
-                            return Optional.of(valPtr.reinterpret(128).getUtf8String(0));
+                            return Optional.of(valPtr.reinterpret(strlen(valPtr) + 1).getUtf8String(0));
                         } else {
                             // Found keyword but its value is null.
                             return Optional.empty();
@@ -331,9 +334,9 @@ public final class PQX extends PQ {
                 if (keywordPtr.equals(NULL)) {
                     break;
                 } else {
-                    System.out.print(keywordPtr.reinterpret(128).getUtf8String(0) + ": ");
+                    System.out.print(keywordPtr.reinterpret(strlen(keywordPtr) + 1).getUtf8String(0) + ": ");
                     if (!valPtr.equals(NULL)) {
-                        System.out.print(valPtr.reinterpret(128).getUtf8String(0));
+                        System.out.print(valPtr.reinterpret(strlen(valPtr) + 1).getUtf8String(0));
                     }
 
                     System.out.println();

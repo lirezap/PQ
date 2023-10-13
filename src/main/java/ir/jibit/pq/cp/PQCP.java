@@ -37,6 +37,7 @@ import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static ir.jibit.pq.layouts.PreparedStatement.PreparedStatement_stmtName_varHandle;
+import static ir.jibit.pq.std.CString.strlen;
 
 /**
  * A connection pool implementation using {@link PQ}.
@@ -458,11 +459,12 @@ public class PQCP implements AutoCloseable {
         try {
             cp.locks[0].acquire();
 
+            final var db = cp.pqx.db(cp.connections[0]);
             logger.info(String.format(
                     "connected to postgresql server: [server version: %d, protocol version: %d, db: %s]",
                     cp.pqx.serverVersion(cp.connections[0]),
                     cp.pqx.protocolVersion(cp.connections[0]),
-                    cp.pqx.db(cp.connections[0]).reinterpret(128).getUtf8String(0)));
+                    db.reinterpret(strlen(db) + 1).getUtf8String(0)));
         } catch (Throwable th) {
             logger.warning("could not log server information!");
         } finally {
