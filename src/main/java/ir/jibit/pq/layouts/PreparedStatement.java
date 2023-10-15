@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class PreparedStatement {
 
-    public static final StructLayout PreparedStatement = structLayout(
+    public static final StructLayout PreparedStatementLayout = structLayout(
             ADDRESS.withName("stmtName"),
             ADDRESS.withName("query"),
             JAVA_INT.withName("nParams"),
@@ -50,22 +50,22 @@ public final class PreparedStatement {
     );
 
     public static final VarHandle PreparedStatement_stmtName_varHandle =
-            PreparedStatement.varHandle(groupElement("stmtName"));
+            PreparedStatementLayout.varHandle(groupElement("stmtName"));
 
     public static final VarHandle PreparedStatement_query_varHandle =
-            PreparedStatement.varHandle(groupElement("query"));
+            PreparedStatementLayout.varHandle(groupElement("query"));
 
     public static final VarHandle PreparedStatement_nParams_varHandle =
-            PreparedStatement.varHandle(groupElement("nParams"));
+            PreparedStatementLayout.varHandle(groupElement("nParams"));
 
     public static final VarHandle PreparedStatement_paramValues_varHandle =
-            PreparedStatement.varHandle(groupElement("paramValues"));
+            PreparedStatementLayout.varHandle(groupElement("paramValues"));
 
     public static final VarHandle PreparedStatement_paramLengths_varHandle =
-            PreparedStatement.varHandle(groupElement("paramLengths"));
+            PreparedStatementLayout.varHandle(groupElement("paramLengths"));
 
     public static final VarHandle PreparedStatement_paramFormats_varHandle =
-            PreparedStatement.varHandle(groupElement("paramFormats"));
+            PreparedStatementLayout.varHandle(groupElement("paramFormats"));
 
     /**
      * Creates a new prepared statement in provided memory arena with all default values for fields.
@@ -77,7 +77,7 @@ public final class PreparedStatement {
             final Arena arena) {
 
         requireNonNull(arena);
-        return arena.allocate(PreparedStatement);
+        return arena.allocate(PreparedStatementLayout);
     }
 
     public static void setStmtName(
@@ -100,6 +100,14 @@ public final class PreparedStatement {
         requireNonNull(preparedStatement);
         requireNonNull(query);
         PreparedStatement_query_varHandle.set(preparedStatement, arena.allocateUtf8String(query));
+    }
+
+    public static void setNParams(
+            final MemorySegment preparedStatement,
+            final int nParams) {
+
+        requireNonNull(preparedStatement);
+        PreparedStatement_nParams_varHandle.set(preparedStatement, nParams);
     }
 
     public static void addTextValue(
