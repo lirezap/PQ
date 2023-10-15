@@ -23,11 +23,13 @@ import ir.jibit.pq.PQ;
 import ir.jibit.pq.PQX;
 import ir.jibit.pq.enums.ConnStatusType;
 import ir.jibit.pq.enums.ExecStatusType;
+import ir.jibit.pq.layouts.PreparedStatement;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
@@ -36,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import static ir.jibit.pq.layouts.PreparedStatement.PreparedStatement_stmtName_varHandle;
+import static ir.jibit.pq.layouts.PreparedStatement.*;
 import static ir.jibit.pq.std.CString.strlen;
 
 /**
@@ -63,6 +65,9 @@ public class PQCP implements AutoCloseable {
     protected final String connInfo;
     protected final MemorySegment[] connections;
     protected final Semaphore[] locks;
+
+    protected final Arena arena;
+    protected final ArrayList<MemorySegment> preparedStatements;
 
     public PQCP(
             final Path path,
@@ -146,6 +151,9 @@ public class PQCP implements AutoCloseable {
         this.connections = new MemorySegment[this.maxPoolSize];
         this.locks = new Semaphore[this.maxPoolSize];
 
+        this.arena = Arena.ofShared();
+        this.preparedStatements = new ArrayList<>();
+
         if (!connect(this)) {
             throw new Exception("could not build connection pool successfully!");
         }
@@ -157,11 +165,12 @@ public class PQCP implements AutoCloseable {
             final MemorySegment preparedStatement) {
 
         final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var query = (MemorySegment) PreparedStatement_query_varHandle.get(preparedStatement);
         for (int i = 0; i < maxPoolSize; i++) {
             if (locks[i] != null) {
                 try {
                     locks[i].acquire();
-                    prepare(connections[i], preparedStatement, stmtName);
+                    prepareCached(connections[i], preparedStatement, stmtName, query);
                 } catch (Throwable th) {
                     throw new RuntimeException(th);
                 } finally {
@@ -329,6 +338,35 @@ public class PQCP implements AutoCloseable {
         }
     }
 
+    private void prepareCached(
+            final MemorySegment conn,
+            final MemorySegment preparedStatement,
+            final MemorySegment stmtName,
+            final MemorySegment query) throws Throwable {
+
+        final var ps = PreparedStatement.create(arena);
+        PreparedStatement.setStmtName(arena, ps, stmtName.reinterpret(strlen(stmtName) + 1).getUtf8String(0));
+        PreparedStatement.setQuery(arena, ps, query.reinterpret(strlen(query) + 1).getUtf8String(0));
+        PreparedStatement.setNParams(ps, (int) PreparedStatement_nParams_varHandle.get(preparedStatement));
+        preparedStatements.add(ps);
+
+        prepare(conn, preparedStatement, stmtName);
+    }
+
+    private void prepare(
+            final MemorySegment conn,
+            final MemorySegment preparedStatement) throws Throwable {
+
+        var res = pqx.describePrepared(conn, (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement));
+        if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+            // Preparing statement ...
+            res = pqx.prepare(conn, preparedStatement);
+            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
+            }
+        }
+    }
+
     private void prepare(
             final MemorySegment conn,
             final MemorySegment preparedStatement,
@@ -401,6 +439,15 @@ public class PQCP implements AutoCloseable {
                     lock.release();
                     return;
                 }
+
+                // Not thread safe! What are side effects?
+                preparedStatements.forEach(ps -> {
+                    try {
+                        prepare(connections[atIndex], ps);
+                    } catch (Throwable e) {
+                        // Do nothing. Keep created connection open.
+                    }
+                });
 
                 logger.info(String.format("extended pool size to have %d connections to handle more queries", atIndex + 1));
             } catch (Throwable th) {
@@ -488,5 +535,6 @@ public class PQCP implements AutoCloseable {
         }
 
         pqx.close();
+        arena.close();
     }
 }

@@ -291,7 +291,7 @@ public final class PQX extends PQ {
         final var ptr = connInfoOptional(conn).orElseThrow();
         try {
             for (int i = 0; ; i++) {
-                final var rPtr = ptr.reinterpret(PQConnInfoOption.byteSize() + PQConnInfoOption.byteSize() * i);
+                final var rPtr = ptr.reinterpret(PQConnInfoOptionLayout.byteSize() + PQConnInfoOptionLayout.byteSize() * i);
                 final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
 
                 if (!keywordPtr.equals(NULL)) {
@@ -327,7 +327,7 @@ public final class PQX extends PQ {
         final var ptr = connInfoOptional(conn).orElseThrow();
         try {
             for (int i = 0; ; i++) {
-                final var rPtr = ptr.reinterpret(PQConnInfoOption.byteSize() + PQConnInfoOption.byteSize() * i);
+                final var rPtr = ptr.reinterpret(PQConnInfoOptionLayout.byteSize() + PQConnInfoOptionLayout.byteSize() * i);
                 final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
                 final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
 

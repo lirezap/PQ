@@ -36,7 +36,7 @@ import static java.lang.foreign.ValueLayout.JAVA_INT;
  */
 public final class PQConnInfoOption {
 
-    public static final StructLayout PQConnInfoOption = structLayout(
+    public static final StructLayout PQConnInfoOptionLayout = structLayout(
             ADDRESS.withName("keyword"),
             ADDRESS.withName("envvar"),
             ADDRESS.withName("compiled"),
@@ -47,12 +47,12 @@ public final class PQConnInfoOption {
             paddingLayout(4)
     ).withName("PQconninfoOption");
 
-    public static final SequenceLayout PQConnInfoOptionSequence =
-            sequenceLayout(PQConnInfoOption);
+    public static final SequenceLayout PQConnInfoOptionSequenceLayout =
+            sequenceLayout(PQConnInfoOptionLayout);
 
     public static final VarHandle PQConnInfoOptionSequence_keyword_varHandle =
-            PQConnInfoOptionSequence.varHandle(sequenceElement(), groupElement("keyword"));
+            PQConnInfoOptionSequenceLayout.varHandle(sequenceElement(), groupElement("keyword"));
 
     public static final VarHandle PQConnInfoOptionSequence_val_varHandle =
-            PQConnInfoOptionSequence.varHandle(sequenceElement(), groupElement("val"));
+            PQConnInfoOptionSequenceLayout.varHandle(sequenceElement(), groupElement("val"));
 }
