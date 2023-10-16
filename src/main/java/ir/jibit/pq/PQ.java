@@ -30,9 +30,7 @@ import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 
 /**
- * Java FFM used wrapper of postgresql C library.
- * <p>This library is intended to be low level, minimal and with the goal of being high performance.</p>
- * <p>Higher level abstractions can be built easily by using these low level functions.</p>
+ * Java FFM used wrapper of postgresql C library functions.
  *
  * @author Alireza Pourtaghi
  */
