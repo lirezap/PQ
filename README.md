@@ -11,7 +11,7 @@ class of this library. AsyncPQCP is the asynchronous version of PQCP that can be
 
 ---
 
-#### Benchmark
+#### Sample Benchmarks
 
 To benchmark the library, I used the following table definition:
 
@@ -88,7 +88,7 @@ Then add PQ dependency into your maven project:
 <dependency>
     <groupId>ir.jibit</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.30</version>
+    <version>0.0.31</version>
 </dependency>
 ```
 
