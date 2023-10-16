@@ -24,6 +24,7 @@
 
         <!-- Plugins Versioning-->
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
+        <maven.javadoc.plugin.version>3.6.0</maven.javadoc.plugin.version>
     </properties>
 
     <build>
@@ -36,6 +37,16 @@
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                     </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.javadoc.plugin.version}</version>
+                <configuration>
+                    <release>21</release>
+                    <additionalOptions>--enable-preview</additionalOptions>
                 </configuration>
             </plugin>
         </plugins>
