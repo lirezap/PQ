@@ -90,5 +90,8 @@ public enum ExecStatusType {
      */
     PGRES_PIPELINE_ABORTED,
 
+    /**
+     * Execution status unknown.
+     */
     UNKNOWN
 }

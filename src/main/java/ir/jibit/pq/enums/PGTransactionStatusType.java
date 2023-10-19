@@ -50,5 +50,8 @@ public enum PGTransactionStatusType {
      */
     PQTRANS_UNKNOWN,
 
+    /**
+     * Transaction status unknown.
+     */
     UNKNOWN
 }

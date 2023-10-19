@@ -110,6 +110,15 @@ public final class PreparedStatement {
         PreparedStatement_nParams_varHandle.set(preparedStatement, nParams);
     }
 
+    /**
+     * Adds a text data value to the current not filled parameter in the query specified as $n ($1, $2, etc.).
+     * For example if you call this method in a prepared statement for the first time, value is inserted at position $1,
+     * subsequent calls will fill $2, $3 and so on.
+     *
+     * @param arena             the arena that prepared statement created at
+     * @param preparedStatement prepared statement that must be used to add a text data value into
+     * @param value             text data value
+     */
     public static void addTextValue(
             final Arena arena,
             final MemorySegment preparedStatement,

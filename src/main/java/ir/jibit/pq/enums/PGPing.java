@@ -48,5 +48,8 @@ public enum PGPing {
      */
     PQPING_NO_ATTEMPT,
 
+    /**
+     * Ping status unknown.
+     */
     UNKNOWN
 }

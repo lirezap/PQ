@@ -18,7 +18,7 @@
  */
 
 /**
- * <h2>Enum definitions of C postgresql library or internally used ones</h2>
+ * <h2>Enum definitions of postgresql C library or internally used ones</h2>
  *
  * @author Alireza Pourtaghi
  */

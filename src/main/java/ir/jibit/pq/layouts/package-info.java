@@ -18,7 +18,7 @@
  */
 
 /**
- * <h2>Memory layout definitions of C postgresql library or internally used ones</h2>
+ * <h2>Memory layout definitions of postgresql C library or internally used ones</h2>
  *
  * @author Alireza Pourtaghi
  */
