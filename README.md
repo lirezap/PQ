@@ -11,9 +11,11 @@ class of this library. AsyncPQCP is the asynchronous version of PQCP that can be
 
 ---
 
-#### Sample Benchmarks
+#### Sample Benchmark
 
-To benchmark the library, I used the following table definition:
+To benchmark the library, I used the following table definition; it's just a sample benchmark scenario. To compare this
+library with other CP implementations (like HikariCP) you can do it yourself with your own scenario. In the following
+scenario (Inserting 5000 events concurrently), I got better results in compare to HikariCP.
 
 ```text
 -- event table definition.
@@ -31,8 +33,6 @@ CREATE INDEX event_type_ts_index ON event (type, ts DESC);
 CREATE INDEX event_entity_id_ts_index ON event (entity_id, ts DESC);
 CREATE INDEX event_type_entity_id_ts_index ON event (type, entity_id, ts DESC);
 ```
-
-Then measured important database actions with different setups of PQCP (or its async equivalent).
 
 MacBook Air M1, with postgresql version 15 as docker container with default configuration:
 
@@ -88,7 +88,7 @@ Then add PQ dependency into your maven project:
 <dependency>
     <groupId>ir.jibit</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.31</version>
+    <version>0.0.32</version>
 </dependency>
 ```
 
