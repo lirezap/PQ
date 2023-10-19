@@ -28,12 +28,12 @@
  *
  * <p>
  * The main usable connectors are {@link ir.jibit.pq.PQ}, {@link ir.jibit.pq.PQX} (PQ extended),
- * {@link ir.jibit.pq.cp.PQCP} (PQ connection pool) and {@link ir.jibit.pq.cp.AsyncPQCP} (Asynchronous pool).
+ * {@link ir.jibit.pq.cp.PQCP} (PQ connection pool) and {@link ir.jibit.pq.cp.AsyncPQCP} (Asynchronous connection pool).
  * {@link ir.jibit.pq.PQ} is very low level FFM enabled access connector, it has methods equivalent to postgresql C
- * functions. {@link ir.jibit.pq.PQX} is based on PQ with some extended features. {@link ir.jibit.pq.cp.PQCP} is a
- * connection pool implementation based on {@link ir.jibit.pq.PQX} and is probably the most important class of this
- * library. {@link ir.jibit.pq.cp.AsyncPQCP} is the asynchronous version of {@link ir.jibit.pq.cp.PQCP} that can be used
- * for asynchronous database access.
+ * functions. {@link ir.jibit.pq.PQX} is based on {@link ir.jibit.pq.PQ} with some extended features.
+ * {@link ir.jibit.pq.cp.PQCP} is a connection pool implementation based on {@link ir.jibit.pq.PQX} and is probably the
+ * most important class of this library. {@link ir.jibit.pq.cp.AsyncPQCP} is the asynchronous version of
+ * {@link ir.jibit.pq.cp.PQCP} that can be used for asynchronous database access.
  * </p>
  *
  * @author Alireza Pourtaghi
