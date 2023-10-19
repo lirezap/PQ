@@ -25,7 +25,18 @@ package ir.jibit.pq.enums;
  * @author Alireza Pourtaghi
  */
 public enum FieldFormat {
+    /**
+     * Text data representation format.
+     */
     TEXT,
+
+    /**
+     * Binary data representation format.
+     */
     BINARY,
+
+    /**
+     * Unknown data representation format.
+     */
     UNKNOWN
 }

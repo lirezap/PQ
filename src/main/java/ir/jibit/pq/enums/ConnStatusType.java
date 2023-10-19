@@ -25,7 +25,18 @@ package ir.jibit.pq.enums;
  * @author Alireza Pourtaghi
  */
 public enum ConnStatusType {
+    /**
+     * Connection status ok.
+     */
     CONNECTION_OK,
+
+    /**
+     * Connection status not ok.
+     */
     CONNECTION_BAD,
+
+    /**
+     * Connection status unknown.
+     */
     UNKNOWN
 }

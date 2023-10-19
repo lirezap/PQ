@@ -38,6 +38,11 @@ import static java.lang.foreign.MemorySegment.NULL;
  */
 public final class PQX extends PQ {
 
+    /**
+     * Same as {@link PQ} constructor with extended features.
+     *
+     * @param path shared object (or dynamic) postgresql C library 's path
+     */
     public PQX(
             final Path path) {
 
@@ -51,9 +56,9 @@ public final class PQX extends PQ {
             final String connInfo) throws Throwable {
 
         try (final var arena = Arena.ofConfined()) {
-            final var pgConn = connectDB(arena.allocateUtf8String(connInfo));
-            if (!pgConn.equals(NULL)) {
-                return Optional.of(pgConn);
+            final var conn = connectDB(arena.allocateUtf8String(connInfo));
+            if (!conn.equals(NULL)) {
+                return Optional.of(conn);
             }
 
             return Optional.empty();

@@ -103,6 +103,12 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle consumeInputHandle;
     private final MethodHandle isBusyHandle;
 
+    /**
+     * Creates memory allocator, native linker and library lookup instance to load shared object (or dynamic) postgresql
+     * C library from provided path.
+     *
+     * @param path shared object (or dynamic) postgresql C library 's path
+     */
     public PQ(
             final Path path) {
 
