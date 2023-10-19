@@ -23,6 +23,7 @@ import ir.jibit.pq.PQ;
 import ir.jibit.pq.PQX;
 import ir.jibit.pq.enums.ConnStatusType;
 import ir.jibit.pq.enums.ExecStatusType;
+import ir.jibit.pq.enums.FieldFormat;
 import ir.jibit.pq.layouts.PreparedStatement;
 
 import java.lang.foreign.Arena;
@@ -30,6 +31,7 @@ import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
@@ -271,6 +273,127 @@ public class PQCP implements AutoCloseable {
 
         try {
             pqx.clear(res);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public int nTuples(
+            final MemorySegment res) {
+
+        try {
+            return pqx.nTuples(res);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public int nFields(
+            final MemorySegment res) {
+
+        try {
+            return pqx.nFields(res);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public Optional<String> fNameOptionalString(
+            final MemorySegment res,
+            final int columnNumber) {
+
+        try {
+            return pqx.fNameOptionalString(res, columnNumber);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public Optional<Integer> fNumberOptional(
+            final MemorySegment res,
+            final String columnName) {
+
+        try {
+            return pqx.fNumberOptional(res, columnName);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public FieldFormat fFormat(
+            final MemorySegment res,
+            final int columnNumber) {
+
+        try {
+            return pqx.fFormat(res, columnNumber);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public int fType(
+            final MemorySegment res,
+            final int columnNumber) {
+
+        try {
+            return pqx.fType(res, columnNumber);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public int fMod(
+            final MemorySegment res,
+            final int columnNumber) {
+
+        try {
+            return pqx.fMod(res, columnNumber);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public MemorySegment getValue(
+            final MemorySegment res,
+            final int rowNumber,
+            final int columnNumber) {
+
+        try {
+            return pqx.getValue(res, rowNumber, columnNumber);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public boolean getIsNull(
+            final MemorySegment res,
+            final int rowNumber,
+            final int columnNumber) {
+
+        try {
+            return pqx.getIsNull(res, rowNumber, columnNumber);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public int getLength(
+            final MemorySegment res,
+            final int rowNumber,
+            final int columnNumber) {
+
+        try {
+            return pqx.getLength(res, rowNumber, columnNumber);
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    public int cmdTuplesInt(
+            final MemorySegment res) {
+
+        try {
+            return pqx.cmdTuplesInt(res);
         } catch (Throwable th) {
             throw new RuntimeException(th);
         }
