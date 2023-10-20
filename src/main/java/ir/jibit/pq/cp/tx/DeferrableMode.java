@@ -21,12 +21,27 @@ package ir.jibit.pq.cp.tx;
 
 /**
  * Different deferrable modes; used in transaction blocks.
+ * This transaction property has no effect unless the transaction is also SERIALIZABLE and READ ONLY.
  *
  * @author Alireza Pourtaghi
  */
 public enum DeferrableMode {
+    /**
+     * None; results in default one.
+     */
     NONE(null),
+
+    /**
+     * When all three of these properties (SERIALIZABLE, READ ONLY and DEFERRABLE) are selected for a transaction, the
+     * transaction may block when first acquiring its snapshot, after which it is able to run without the normal
+     * overhead of a SERIALIZABLE transaction and without any risk of contributing to or being canceled by a
+     * serialization failure. This mode is well suited for long-running reports or backups.
+     */
     DEFERRABLE("DEFERRABLE"),
+
+    /**
+     * This is the default.
+     */
     NOT_DEFERRABLE("NOT DEFERRABLE");
 
     private final String value;
