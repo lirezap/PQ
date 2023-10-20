@@ -268,6 +268,76 @@ public class PQCP implements AutoCloseable {
         return prepareThenFetch(preparedStatement, false);
     }
 
+    public Connection begin() throws TimeoutException {
+        return begin(IsolationLevel.NONE, AccessMode.NONE, DeferrableMode.NONE);
+    }
+
+    public Connection begin(
+            final IsolationLevel isolationLevel,
+            final AccessMode accessMode,
+            final DeferrableMode deferrableMode) throws TimeoutException {
+
+        final var query = beginQuery(isolationLevel, accessMode, deferrableMode);
+        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+        try {
+            final var res = pqx.exec(connections[availableIndex], query);
+            final var status = pqx.resultStatus(res);
+
+            if (status == ExecStatusType.PGRES_COMMAND_OK) {
+                return new Connection(availableIndex, connections[availableIndex]);
+            } else {
+                throw new RuntimeException(String.format("status returned by database server was %s", status));
+            }
+        } catch (Throwable th) {
+            locks[availableIndex].release();
+            throw new RuntimeException(th);
+        }
+    }
+
+    public void commit(
+            final Connection connection) {
+
+        if (locks[connection.getIndex()].availablePermits() > 0) {
+            throw new RuntimeException("previously committed or rolled back");
+        }
+
+        try {
+            final var res = pqx.exec(connection.getConn(), "COMMIT;");
+            final var status = pqx.resultStatus(res);
+
+            if (status != ExecStatusType.PGRES_COMMAND_OK) {
+                throw new RuntimeException(String.format("status returned by database server was %s", status));
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+
+        // If command was ok ...
+        locks[connection.getIndex()].release();
+    }
+
+    public void rollback(
+            final Connection connection) {
+
+        if (locks[connection.getIndex()].availablePermits() > 0) {
+            throw new RuntimeException("previously committed or rolled back");
+        }
+
+        try {
+            final var res = pqx.exec(connection.getConn(), "ROLLBACK;");
+            final var status = pqx.resultStatus(res);
+
+            if (status != ExecStatusType.PGRES_COMMAND_OK) {
+                throw new RuntimeException(String.format("status returned by database server was %s", status));
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+
+        // If command was ok ...
+        locks[connection.getIndex()].release();
+    }
+
     public void clear(
             final MemorySegment res) {
 
@@ -503,6 +573,24 @@ public class PQCP implements AutoCloseable {
                 throw new RuntimeException(pqx.resultErrorMessageString(res));
             }
         }
+    }
+
+    private String beginQuery(
+            final IsolationLevel isolationLevel,
+            final AccessMode accessMode,
+            final DeferrableMode deferrableMode) {
+
+        var query = String.format("BEGIN%s%s%s;",
+                isolationLevel != IsolationLevel.NONE ? String.format(" %s,", isolationLevel.getValue()) : "",
+                accessMode != AccessMode.NONE ? String.format(" %s,", accessMode.getValue()) : "",
+                deferrableMode != DeferrableMode.NONE ? String.format(" %s", deferrableMode.getValue()) : "");
+
+        if (query.charAt(query.length() - 2) == ',') {
+            query = query.substring(0, query.length() - 2);
+            query = query + ";";
+        }
+
+        return query;
     }
 
     protected int getAvailableConnectionIndexLocked(
