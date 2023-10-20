@@ -17,22 +17,25 @@
  *
  */
 
-package ir.jibit.pq.cp;
+package ir.jibit.pq.cp.tx;
 
 import java.lang.foreign.MemorySegment;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Conn wrapper; It also includes index in the pool.
+ * Conn wrapper; It also includes index in the pool. This wrapper is used for transaction blocks.
  *
  * @author Alireza pourtaghi
  */
 public final class Connection {
     private final int index;
     private final MemorySegment conn;
+    private final AtomicBoolean done;
 
     public Connection(final int index, final MemorySegment conn) {
         this.index = index;
         this.conn = conn;
+        this.done = new AtomicBoolean(false);
     }
 
     public int getIndex() {
@@ -41,5 +44,9 @@ public final class Connection {
 
     public MemorySegment getConn() {
         return conn;
+    }
+
+    public AtomicBoolean getDone() {
+        return done;
     }
 }

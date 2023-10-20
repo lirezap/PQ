@@ -17,23 +17,21 @@
  *
  */
 
-package ir.jibit.pq.cp;
+package ir.jibit.pq.cp.tx;
 
 /**
- * Different isolation levels; used in transaction blocks.
+ * Different access modes; used in transaction blocks.
  *
  * @author Alireza Pourtaghi
  */
-public enum IsolationLevel {
+public enum AccessMode {
     NONE(null),
-    SERIALIZABLE("ISOLATION LEVEL SERIALIZABLE"),
-    REPEATABLE_READ("ISOLATION LEVEL REPEATABLE READ"),
-    READ_COMMITTED("ISOLATION LEVEL READ COMMITTED"),
-    READ_UNCOMMITTED("ISOLATION LEVEL READ UNCOMMITTED");
+    READ_WRITE("READ WRITE"),
+    READ_ONLY("READ ONLY");
 
     private final String value;
 
-    IsolationLevel(final String value) {
+    AccessMode(final String value) {
         this.value = value;
     }
 

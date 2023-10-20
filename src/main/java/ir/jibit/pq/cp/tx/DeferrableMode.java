@@ -17,7 +17,7 @@
  *
  */
 
-package ir.jibit.pq.cp;
+package ir.jibit.pq.cp.tx;
 
 /**
  * Different deferrable modes; used in transaction blocks.

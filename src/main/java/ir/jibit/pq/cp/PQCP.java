@@ -21,6 +21,10 @@ package ir.jibit.pq.cp;
 
 import ir.jibit.pq.PQ;
 import ir.jibit.pq.PQX;
+import ir.jibit.pq.cp.tx.AccessMode;
+import ir.jibit.pq.cp.tx.Connection;
+import ir.jibit.pq.cp.tx.DeferrableMode;
+import ir.jibit.pq.cp.tx.IsolationLevel;
 import ir.jibit.pq.enums.ConnStatusType;
 import ir.jibit.pq.enums.ExecStatusType;
 import ir.jibit.pq.enums.FieldFormat;
@@ -212,6 +216,28 @@ public class PQCP implements AutoCloseable {
         }
     }
 
+    public int execute(
+            final Connection connection,
+            final MemorySegment preparedStatement) {
+
+        checkTransactionBlockSafety(connection);
+        try {
+            final var res = pqx.execPreparedBinaryResult(connection.getConn(), preparedStatement);
+            try {
+                final var status = pqx.resultStatus(res);
+                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    return pqx.cmdTuplesInt(res);
+                } else {
+                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                }
+            } finally {
+                pqx.clear(res);
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
     public int prepareThenExecute(
             final MemorySegment preparedStatement) throws TimeoutException {
 
@@ -244,10 +270,42 @@ public class PQCP implements AutoCloseable {
         }
     }
 
+    public int prepareThenExecute(
+            final Connection connection,
+            final MemorySegment preparedStatement) {
+
+        checkTransactionBlockSafety(connection);
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+
+        try {
+            prepare(connection.getConn(), preparedStatement, stmtName);
+            final var res = pqx.execPreparedBinaryResult(connection.getConn(), preparedStatement);
+            try {
+                final var status = pqx.resultStatus(res);
+                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    return pqx.cmdTuplesInt(res);
+                } else {
+                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                }
+            } finally {
+                pqx.clear(res);
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
     public MemorySegment fetchTextResult(
             final MemorySegment preparedStatement) throws TimeoutException {
 
         return fetch(preparedStatement, true);
+    }
+
+    public MemorySegment fetchTextResult(
+            final Connection connection,
+            final MemorySegment preparedStatement) {
+
+        return fetch(connection, preparedStatement, true);
     }
 
     public MemorySegment prepareThenFetchTextResult(
@@ -256,16 +314,37 @@ public class PQCP implements AutoCloseable {
         return prepareThenFetch(preparedStatement, true);
     }
 
+    public MemorySegment prepareThenFetchTextResult(
+            final Connection connection,
+            final MemorySegment preparedStatement) {
+
+        return prepareThenFetch(connection, preparedStatement, true);
+    }
+
     public MemorySegment fetchBinaryResult(
             final MemorySegment preparedStatement) throws TimeoutException {
 
         return fetch(preparedStatement, false);
     }
 
+    public MemorySegment fetchBinaryResult(
+            final Connection connection,
+            final MemorySegment preparedStatement) {
+
+        return fetch(connection, preparedStatement, false);
+    }
+
     public MemorySegment prepareThenFetchBinaryResult(
             final MemorySegment preparedStatement) throws TimeoutException {
 
         return prepareThenFetch(preparedStatement, false);
+    }
+
+    public MemorySegment prepareThenFetchBinaryResult(
+            final Connection connection,
+            final MemorySegment preparedStatement) {
+
+        return prepareThenFetch(connection, preparedStatement, false);
     }
 
     public Connection begin() throws TimeoutException {
@@ -297,10 +376,7 @@ public class PQCP implements AutoCloseable {
     public void commit(
             final Connection connection) {
 
-        if (locks[connection.getIndex()].availablePermits() > 0) {
-            throw new RuntimeException("previously committed or rolled back");
-        }
-
+        checkTransactionBlockSafety(connection);
         try {
             final var res = pqx.exec(connection.getConn(), "COMMIT;");
             final var status = pqx.resultStatus(res);
@@ -312,17 +388,15 @@ public class PQCP implements AutoCloseable {
             throw new RuntimeException(th);
         }
 
-        // If command was ok ...
+        // If command was ok.
+        connection.getDone().compareAndSet(false, true);
         locks[connection.getIndex()].release();
     }
 
     public void rollback(
             final Connection connection) {
 
-        if (locks[connection.getIndex()].availablePermits() > 0) {
-            throw new RuntimeException("previously committed or rolled back");
-        }
-
+        checkTransactionBlockSafety(connection);
         try {
             final var res = pqx.exec(connection.getConn(), "ROLLBACK;");
             final var status = pqx.resultStatus(res);
@@ -334,7 +408,8 @@ public class PQCP implements AutoCloseable {
             throw new RuntimeException(th);
         }
 
-        // If command was ok ...
+        // If command was ok.
+        connection.getDone().compareAndSet(false, true);
         locks[connection.getIndex()].release();
     }
 
@@ -499,6 +574,28 @@ public class PQCP implements AutoCloseable {
         }
     }
 
+    private MemorySegment fetch(
+            final Connection connection,
+            final MemorySegment preparedStatement,
+            final boolean text) {
+
+        checkTransactionBlockSafety(connection);
+        try {
+            final var res = text ?
+                    pqx.execPreparedTextResult(connection.getConn(), preparedStatement) :
+                    pqx.execPreparedBinaryResult(connection.getConn(), preparedStatement);
+
+            final var status = pqx.resultStatus(res);
+            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                return res;
+            } else {
+                throw new RuntimeException(String.format("status returned by database server was %s", status));
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
     private MemorySegment prepareThenFetch(
             final MemorySegment preparedStatement,
             final boolean text) throws TimeoutException {
@@ -528,6 +625,31 @@ public class PQCP implements AutoCloseable {
             throw new RuntimeException(th);
         } finally {
             if (!connReleased) locks[availableIndex].release();
+        }
+    }
+
+    private MemorySegment prepareThenFetch(
+            final Connection connection,
+            final MemorySegment preparedStatement,
+            final boolean text) {
+
+        checkTransactionBlockSafety(connection);
+        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+
+        try {
+            prepare(connection.getConn(), preparedStatement, stmtName);
+            final var res = text ?
+                    pqx.execPreparedTextResult(connection.getConn(), preparedStatement) :
+                    pqx.execPreparedBinaryResult(connection.getConn(), preparedStatement);
+
+            final var status = pqx.resultStatus(res);
+            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                return res;
+            } else {
+                throw new RuntimeException(String.format("status returned by database server was %s", status));
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
         }
     }
 
@@ -591,6 +713,14 @@ public class PQCP implements AutoCloseable {
         }
 
         return query;
+    }
+
+    private void checkTransactionBlockSafety(
+            final Connection connection) {
+
+        if (connection.getDone().compareAndSet(true, true)) {
+            throw new RuntimeException("transaction done: previously committed or rolled back");
+        }
     }
 
     protected int getAvailableConnectionIndexLocked(
