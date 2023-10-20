@@ -17,25 +17,9 @@
  *
  */
 
-package ir.jibit.pq.cp;
-
 /**
- * Different access modes; used in transaction blocks.
+ * <h2>Transaction block related model definitions</h2>
  *
  * @author Alireza Pourtaghi
  */
-public enum AccessMode {
-    NONE(null),
-    READ_WRITE("READ WRITE"),
-    READ_ONLY("READ ONLY");
-
-    private final String value;
-
-    AccessMode(final String value) {
-        this.value = value;
-    }
-
-    public String getValue() {
-        return value;
-    }
-}
+package ir.jibit.pq.cp.tx;
