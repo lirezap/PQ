@@ -21,12 +21,27 @@ package ir.jibit.pq.cp.tx;
 
 /**
  * Different access modes; used in transaction blocks.
+ * The transaction access mode determines whether the transaction is read/write or read-only.
  *
  * @author Alireza Pourtaghi
  */
 public enum AccessMode {
+    /**
+     * None; results in default one.
+     */
     NONE(null),
+
+    /**
+     * Read/write is the default.
+     */
     READ_WRITE("READ WRITE"),
+
+    /**
+     * When a transaction is read-only, the following SQL commands are disallowed: INSERT, UPDATE, DELETE, MERGE, and
+     * COPY FROM if the table they would write to is not a temporary table; all CREATE, ALTER, and DROP commands;
+     * COMMENT, GRANT, REVOKE, TRUNCATE; and EXPLAIN ANALYZE and EXECUTE if the command they would execute is among
+     * those listed. This is a high-level notion of read-only that does not prevent all writes to disk.
+     */
     READ_ONLY("READ ONLY");
 
     private final String value;
