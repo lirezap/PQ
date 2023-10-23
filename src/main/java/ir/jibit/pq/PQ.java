@@ -37,7 +37,7 @@ import static java.lang.foreign.ValueLayout.JAVA_INT;
 public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
-     * Shared or dynamic postgresql c library path.
+     * Shared or dynamic postgresql C library path.
      */
     private final Path path;
 

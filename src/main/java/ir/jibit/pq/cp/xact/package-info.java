@@ -22,4 +22,4 @@
  *
  * @author Alireza Pourtaghi
  */
-package ir.jibit.pq.cp.tx;
+package ir.jibit.pq.cp.xact;

@@ -21,10 +21,10 @@ package ir.jibit.pq.cp;
 
 import ir.jibit.pq.PQ;
 import ir.jibit.pq.PQX;
-import ir.jibit.pq.cp.tx.AccessMode;
-import ir.jibit.pq.cp.tx.TxBlock;
-import ir.jibit.pq.cp.tx.DeferrableMode;
-import ir.jibit.pq.cp.tx.IsolationLevel;
+import ir.jibit.pq.cp.xact.AccessMode;
+import ir.jibit.pq.cp.xact.DeferrableMode;
+import ir.jibit.pq.cp.xact.IsolationLevel;
+import ir.jibit.pq.cp.xact.TransactionBlock;
 import ir.jibit.pq.enums.ConnStatusType;
 import ir.jibit.pq.enums.ExecStatusType;
 import ir.jibit.pq.enums.FieldFormat;
@@ -217,12 +217,12 @@ public class PQCP implements AutoCloseable {
     }
 
     public int execute(
-            final TxBlock txBlock,
+            final TransactionBlock transactionBlock,
             final MemorySegment preparedStatement) {
 
-        checkTransactionBlockSafety(txBlock);
+        checkTransactionBlockSafety(transactionBlock);
         try {
-            final var res = pqx.execPreparedBinaryResult(txBlock.getConn(), preparedStatement);
+            final var res = pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
             try {
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
@@ -271,15 +271,15 @@ public class PQCP implements AutoCloseable {
     }
 
     public int prepareThenExecute(
-            final TxBlock txBlock,
+            final TransactionBlock transactionBlock,
             final MemorySegment preparedStatement) {
 
-        checkTransactionBlockSafety(txBlock);
+        checkTransactionBlockSafety(transactionBlock);
         final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
 
         try {
-            prepare(txBlock.getConn(), preparedStatement, stmtName);
-            final var res = pqx.execPreparedBinaryResult(txBlock.getConn(), preparedStatement);
+            prepare(transactionBlock.getConn(), preparedStatement, stmtName);
+            final var res = pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
             try {
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
@@ -302,10 +302,10 @@ public class PQCP implements AutoCloseable {
     }
 
     public MemorySegment fetchTextResult(
-            final TxBlock txBlock,
+            final TransactionBlock transactionBlock,
             final MemorySegment preparedStatement) {
 
-        return fetch(txBlock, preparedStatement, true);
+        return fetch(transactionBlock, preparedStatement, true);
     }
 
     public MemorySegment prepareThenFetchTextResult(
@@ -315,10 +315,10 @@ public class PQCP implements AutoCloseable {
     }
 
     public MemorySegment prepareThenFetchTextResult(
-            final TxBlock txBlock,
+            final TransactionBlock transactionBlock,
             final MemorySegment preparedStatement) {
 
-        return prepareThenFetch(txBlock, preparedStatement, true);
+        return prepareThenFetch(transactionBlock, preparedStatement, true);
     }
 
     public MemorySegment fetchBinaryResult(
@@ -328,10 +328,10 @@ public class PQCP implements AutoCloseable {
     }
 
     public MemorySegment fetchBinaryResult(
-            final TxBlock txBlock,
+            final TransactionBlock transactionBlock,
             final MemorySegment preparedStatement) {
 
-        return fetch(txBlock, preparedStatement, false);
+        return fetch(transactionBlock, preparedStatement, false);
     }
 
     public MemorySegment prepareThenFetchBinaryResult(
@@ -341,17 +341,17 @@ public class PQCP implements AutoCloseable {
     }
 
     public MemorySegment prepareThenFetchBinaryResult(
-            final TxBlock txBlock,
+            final TransactionBlock transactionBlock,
             final MemorySegment preparedStatement) {
 
-        return prepareThenFetch(txBlock, preparedStatement, false);
+        return prepareThenFetch(transactionBlock, preparedStatement, false);
     }
 
-    public TxBlock begin() throws TimeoutException {
+    public TransactionBlock begin() throws TimeoutException {
         return begin(IsolationLevel.NONE, AccessMode.NONE, DeferrableMode.NONE);
     }
 
-    public TxBlock begin(
+    public TransactionBlock begin(
             final IsolationLevel isolationLevel,
             final AccessMode accessMode,
             final DeferrableMode deferrableMode) throws TimeoutException {
@@ -363,7 +363,7 @@ public class PQCP implements AutoCloseable {
             final var status = pqx.resultStatus(res);
 
             if (status == ExecStatusType.PGRES_COMMAND_OK) {
-                return new TxBlock(availableIndex, connections[availableIndex]);
+                return new TransactionBlock(availableIndex, connections[availableIndex]);
             } else {
                 throw new RuntimeException(String.format("status returned by database server was %s", status));
             }
@@ -374,11 +374,11 @@ public class PQCP implements AutoCloseable {
     }
 
     public void commit(
-            final TxBlock txBlock) {
+            final TransactionBlock transactionBlock) {
 
-        checkTransactionBlockSafety(txBlock);
+        checkTransactionBlockSafety(transactionBlock);
         try {
-            final var res = pqx.exec(txBlock.getConn(), "COMMIT;");
+            final var res = pqx.exec(transactionBlock.getConn(), "COMMIT;");
             final var status = pqx.resultStatus(res);
 
             if (status != ExecStatusType.PGRES_COMMAND_OK) {
@@ -389,16 +389,16 @@ public class PQCP implements AutoCloseable {
         }
 
         // If command was ok.
-        txBlock.getDone().compareAndSet(false, true);
-        locks[txBlock.getIndex()].release();
+        transactionBlock.getDone().compareAndSet(false, true);
+        locks[transactionBlock.getIndex()].release();
     }
 
     public void rollback(
-            final TxBlock txBlock) {
+            final TransactionBlock transactionBlock) {
 
-        checkTransactionBlockSafety(txBlock);
+        checkTransactionBlockSafety(transactionBlock);
         try {
-            final var res = pqx.exec(txBlock.getConn(), "ROLLBACK;");
+            final var res = pqx.exec(transactionBlock.getConn(), "ROLLBACK;");
             final var status = pqx.resultStatus(res);
 
             if (status != ExecStatusType.PGRES_COMMAND_OK) {
@@ -409,8 +409,8 @@ public class PQCP implements AutoCloseable {
         }
 
         // If command was ok.
-        txBlock.getDone().compareAndSet(false, true);
-        locks[txBlock.getIndex()].release();
+        transactionBlock.getDone().compareAndSet(false, true);
+        locks[transactionBlock.getIndex()].release();
     }
 
     public void clear(
@@ -575,15 +575,15 @@ public class PQCP implements AutoCloseable {
     }
 
     private MemorySegment fetch(
-            final TxBlock txBlock,
+            final TransactionBlock transactionBlock,
             final MemorySegment preparedStatement,
             final boolean text) {
 
-        checkTransactionBlockSafety(txBlock);
+        checkTransactionBlockSafety(transactionBlock);
         try {
             final var res = text ?
-                    pqx.execPreparedTextResult(txBlock.getConn(), preparedStatement) :
-                    pqx.execPreparedBinaryResult(txBlock.getConn(), preparedStatement);
+                    pqx.execPreparedTextResult(transactionBlock.getConn(), preparedStatement) :
+                    pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
 
             final var status = pqx.resultStatus(res);
             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
@@ -629,18 +629,18 @@ public class PQCP implements AutoCloseable {
     }
 
     private MemorySegment prepareThenFetch(
-            final TxBlock txBlock,
+            final TransactionBlock transactionBlock,
             final MemorySegment preparedStatement,
             final boolean text) {
 
-        checkTransactionBlockSafety(txBlock);
+        checkTransactionBlockSafety(transactionBlock);
         final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
 
         try {
-            prepare(txBlock.getConn(), preparedStatement, stmtName);
+            prepare(transactionBlock.getConn(), preparedStatement, stmtName);
             final var res = text ?
-                    pqx.execPreparedTextResult(txBlock.getConn(), preparedStatement) :
-                    pqx.execPreparedBinaryResult(txBlock.getConn(), preparedStatement);
+                    pqx.execPreparedTextResult(transactionBlock.getConn(), preparedStatement) :
+                    pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
 
             final var status = pqx.resultStatus(res);
             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
@@ -716,9 +716,9 @@ public class PQCP implements AutoCloseable {
     }
 
     private void checkTransactionBlockSafety(
-            final TxBlock txBlock) {
+            final TransactionBlock transactionBlock) {
 
-        if (txBlock.getDone().compareAndSet(true, true)) {
+        if (transactionBlock.getDone().compareAndSet(true, true)) {
             throw new RuntimeException("transaction done: previously committed or rolled back");
         }
     }
