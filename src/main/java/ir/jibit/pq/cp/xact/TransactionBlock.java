@@ -17,7 +17,7 @@
  *
  */
 
-package ir.jibit.pq.cp.tx;
+package ir.jibit.pq.cp.xact;
 
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,12 +27,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Alireza pourtaghi
  */
-public final class TxBlock {
+public final class TransactionBlock {
     private final int index;
     private final MemorySegment conn;
     private final AtomicBoolean done;
 
-    public TxBlock(final int index, final MemorySegment conn) {
+    public TransactionBlock(final int index, final MemorySegment conn) {
         this.index = index;
         this.conn = conn;
         this.done = new AtomicBoolean(false);
