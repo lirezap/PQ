@@ -44,8 +44,13 @@ public class AsyncPQCP extends PQCP {
             final String connInfo,
             final ExecutorService executor) throws Exception {
 
-        super(path, connInfo);
-        this.executor = executor;
+        this(path,
+                connInfo,
+                DEFAULT_MIN_POOL_SIZE,
+                DEFAULT_MAX_POOL_SIZE,
+                DEFAULT_CONNECT_TIMEOUT,
+                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                executor);
     }
 
     public AsyncPQCP(
@@ -54,8 +59,13 @@ public class AsyncPQCP extends PQCP {
             final int minPoolSize,
             final ExecutorService executor) throws Exception {
 
-        super(path, connInfo, minPoolSize);
-        this.executor = executor;
+        this(path,
+                connInfo,
+                minPoolSize,
+                DEFAULT_MAX_POOL_SIZE,
+                DEFAULT_CONNECT_TIMEOUT,
+                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                executor);
     }
 
     public AsyncPQCP(
@@ -65,8 +75,13 @@ public class AsyncPQCP extends PQCP {
             final int maxPoolSize,
             final ExecutorService executor) throws Exception {
 
-        super(path, connInfo, minPoolSize, maxPoolSize);
-        this.executor = executor;
+        this(path,
+                connInfo,
+                minPoolSize,
+                maxPoolSize,
+                DEFAULT_CONNECT_TIMEOUT,
+                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                executor);
     }
 
     public AsyncPQCP(
@@ -77,8 +92,13 @@ public class AsyncPQCP extends PQCP {
             final Duration connectTimeout,
             final ExecutorService executor) throws Exception {
 
-        super(path, connInfo, minPoolSize, maxPoolSize, connectTimeout);
-        this.executor = executor;
+        this(path,
+                connInfo,
+                minPoolSize,
+                maxPoolSize,
+                connectTimeout,
+                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                executor);
     }
 
     public AsyncPQCP(
