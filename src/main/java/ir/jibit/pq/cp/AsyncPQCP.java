@@ -29,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
 import static ir.jibit.pq.layouts.PreparedStatement.PreparedStatement_stmtName_varHandle;
-import static ir.jibit.pq.std.CString.strlen;
 
 /**
  * An asynchronous connection pool implementation based on {@link PQCP}.
@@ -382,8 +381,7 @@ public class AsyncPQCP extends PQCP {
                     break;
                 }
             } else {
-                final var errorMessage = pqx.errorMessage(conn);
-                throw new RuntimeException(errorMessage.reinterpret(strlen(errorMessage) + 1).getUtf8String(0));
+                throw new RuntimeException(pqx.errorMessageString(conn));
             }
         }
 

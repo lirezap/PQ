@@ -846,13 +846,11 @@ public class PQCP implements AutoCloseable {
 
         try {
             cp.locks[0].acquire();
-
-            final var db = cp.pqx.db(cp.connections[0]);
             logger.info(String.format(
                     "connected to postgresql server: [server version: %d, protocol version: %d, db: %s]",
                     cp.pqx.serverVersion(cp.connections[0]),
                     cp.pqx.protocolVersion(cp.connections[0]),
-                    db.reinterpret(strlen(db) + 1).getUtf8String(0)));
+                    cp.pqx.dbString(cp.connections[0])));
         } catch (Throwable th) {
             logger.warning("could not log server information!");
         } finally {

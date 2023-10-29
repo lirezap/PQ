@@ -91,6 +91,26 @@ public final class PQX extends PQ {
     }
 
     /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQDB">See official doc for more information.</a>
+     */
+    public String dbString(
+            final MemorySegment conn) throws Throwable {
+
+        final var db = db(conn);
+        return db.reinterpret(strlen(db) + 1).getUtf8String(0);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQERRORMESSAGE">See official doc for more information.</a>
+     */
+    public String errorMessageString(
+            final MemorySegment conn) throws Throwable {
+
+        final var errorMessage = errorMessage(conn);
+        return errorMessage.reinterpret(strlen(errorMessage) + 1).getUtf8String(0);
+    }
+
+    /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">See official doc for more information.</a>
      */
     public Optional<Integer> socketOptional(
