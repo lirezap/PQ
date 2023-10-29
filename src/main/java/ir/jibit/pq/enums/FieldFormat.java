@@ -28,15 +28,25 @@ public enum FieldFormat {
     /**
      * Text data representation format.
      */
-    TEXT,
+    TEXT(0),
 
     /**
      * Binary data representation format.
      */
-    BINARY,
+    BINARY(1),
 
     /**
      * Unknown data representation format.
      */
-    UNKNOWN
+    UNKNOWN(-1);
+
+    private final int specifier;
+
+    FieldFormat(int specifier) {
+        this.specifier = specifier;
+    }
+
+    public int getSpecifier() {
+        return specifier;
+    }
 }

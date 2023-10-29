@@ -26,6 +26,8 @@ import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import static ir.jibit.pq.enums.FieldFormat.BINARY;
+import static ir.jibit.pq.enums.FieldFormat.TEXT;
 import static ir.jibit.pq.layouts.PQConnInfoOption.*;
 import static ir.jibit.pq.layouts.PreparedStatement.*;
 import static ir.jibit.pq.std.CString.strlen;
@@ -167,7 +169,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
         final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
-        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 0);
+        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, TEXT.getSpecifier());
     }
 
     /**
@@ -187,7 +189,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
         final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
-        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 1);
+        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, BINARY.getSpecifier());
     }
 
     /**
@@ -278,7 +280,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
         final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
-        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 0);
+        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, TEXT.getSpecifier());
     }
 
     /**
@@ -298,7 +300,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
         final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
-        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, 1);
+        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, BINARY.getSpecifier());
     }
 
     /**
