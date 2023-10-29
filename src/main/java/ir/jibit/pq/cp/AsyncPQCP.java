@@ -158,15 +158,15 @@ public class AsyncPQCP extends PQCP {
                     if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
                         final var res = loopGetResult(conn);
                         try {
-                            // Release as soon as possible.
-                            locks[availableIndex].release();
-                            connReleased = true;
-
                             final var status = pqx.resultStatus(res);
                             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                                // Release as soon as possible.
+                                locks[availableIndex].release();
+                                connReleased = true;
+
                                 result.complete(pqx.cmdTuplesInt(res));
                             } else {
-                                result.completeExceptionally(new RuntimeException(String.format("status returned by database server was %s", status)));
+                                result.completeExceptionally(new RuntimeException(pqx.resultErrorMessageString(res)));
                             }
                         } finally {
                             pqx.clear(res);
@@ -203,15 +203,15 @@ public class AsyncPQCP extends PQCP {
                     if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
                         final var res = loopGetResult(conn);
                         try {
-                            // Release as soon as possible.
-                            locks[availableIndex].release();
-                            connReleased = true;
-
                             final var status = pqx.resultStatus(res);
                             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                                // Release as soon as possible.
+                                locks[availableIndex].release();
+                                connReleased = true;
+
                                 result.complete(pqx.cmdTuplesInt(res));
                             } else {
-                                result.completeExceptionally(new RuntimeException(String.format("status returned by database server was %s", status)));
+                                result.completeExceptionally(new RuntimeException(pqx.resultErrorMessageString(res)));
                             }
                         } finally {
                             pqx.clear(res);
@@ -275,15 +275,15 @@ public class AsyncPQCP extends PQCP {
 
                     if (sent) {
                         final var res = loopGetResult(conn);
-                        // Release as soon as possible.
-                        locks[availableIndex].release();
-                        connReleased = true;
-
                         final var status = pqx.resultStatus(res);
                         if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                            // Release as soon as possible.
+                            locks[availableIndex].release();
+                            connReleased = true;
+
                             result.complete(res);
                         } else {
-                            result.completeExceptionally(new RuntimeException(String.format("status returned by database server was %s", status)));
+                            result.completeExceptionally(new RuntimeException(pqx.resultErrorMessageString(res)));
                         }
                     } else {
                         result.completeExceptionally(new RuntimeException("could not submit query"));
@@ -322,15 +322,15 @@ public class AsyncPQCP extends PQCP {
 
                     if (sent) {
                         final var res = loopGetResult(conn);
-                        // Release as soon as possible.
-                        locks[availableIndex].release();
-                        connReleased = true;
-
                         final var status = pqx.resultStatus(res);
                         if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                            // Release as soon as possible.
+                            locks[availableIndex].release();
+                            connReleased = true;
+
                             result.complete(res);
                         } else {
-                            result.completeExceptionally(new RuntimeException(String.format("status returned by database server was %s", status)));
+                            result.completeExceptionally(new RuntimeException(pqx.resultErrorMessageString(res)));
                         }
                     } else {
                         result.completeExceptionally(new RuntimeException("could not submit query"));
