@@ -196,15 +196,15 @@ public class PQCP implements AutoCloseable {
         try {
             final var res = pqx.execPreparedBinaryResult(conn, preparedStatement);
             try {
-                // Release as soon as possible.
-                locks[availableIndex].release();
-                connReleased = true;
-
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    // Release as soon as possible.
+                    locks[availableIndex].release();
+                    connReleased = true;
+
                     return pqx.cmdTuplesInt(res);
                 } else {
-                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                    throw new RuntimeException(pqx.resultErrorMessageString(res));
                 }
             } finally {
                 pqx.clear(res);
@@ -228,7 +228,7 @@ public class PQCP implements AutoCloseable {
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                     return pqx.cmdTuplesInt(res);
                 } else {
-                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                    throw new RuntimeException(pqx.resultErrorMessageString(res));
                 }
             } finally {
                 pqx.clear(res);
@@ -250,15 +250,15 @@ public class PQCP implements AutoCloseable {
             prepare(conn, preparedStatement, stmtName);
             final var res = pqx.execPreparedBinaryResult(conn, preparedStatement);
             try {
-                // Release as soon as possible.
-                locks[availableIndex].release();
-                connReleased = true;
-
                 final var status = pqx.resultStatus(res);
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    // Release as soon as possible.
+                    locks[availableIndex].release();
+                    connReleased = true;
+
                     return pqx.cmdTuplesInt(res);
                 } else {
-                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                    throw new RuntimeException(pqx.resultErrorMessageString(res));
                 }
             } finally {
                 pqx.clear(res);
@@ -285,7 +285,7 @@ public class PQCP implements AutoCloseable {
                 if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                     return pqx.cmdTuplesInt(res);
                 } else {
-                    throw new RuntimeException(String.format("status returned by database server was %s", status));
+                    throw new RuntimeException(pqx.resultErrorMessageString(res));
                 }
             } finally {
                 pqx.clear(res);
@@ -557,15 +557,15 @@ public class PQCP implements AutoCloseable {
                     pqx.execPreparedTextResult(conn, preparedStatement) :
                     pqx.execPreparedBinaryResult(conn, preparedStatement);
 
-            // Release as soon as possible.
-            locks[availableIndex].release();
-            connReleased = true;
-
             final var status = pqx.resultStatus(res);
             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                // Release as soon as possible.
+                locks[availableIndex].release();
+                connReleased = true;
+
                 return res;
             } else {
-                throw new RuntimeException(String.format("status returned by database server was %s", status));
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
             }
         } catch (Throwable th) {
             throw new RuntimeException(th);
@@ -589,7 +589,7 @@ public class PQCP implements AutoCloseable {
             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                 return res;
             } else {
-                throw new RuntimeException(String.format("status returned by database server was %s", status));
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
             }
         } catch (Throwable th) {
             throw new RuntimeException(th);
@@ -611,15 +611,15 @@ public class PQCP implements AutoCloseable {
                     pqx.execPreparedTextResult(conn, preparedStatement) :
                     pqx.execPreparedBinaryResult(conn, preparedStatement);
 
-            // Release as soon as possible.
-            locks[availableIndex].release();
-            connReleased = true;
-
             final var status = pqx.resultStatus(res);
             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                // Release as soon as possible.
+                locks[availableIndex].release();
+                connReleased = true;
+
                 return res;
             } else {
-                throw new RuntimeException(String.format("status returned by database server was %s", status));
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
             }
         } catch (Throwable th) {
             throw new RuntimeException(th);
@@ -646,7 +646,7 @@ public class PQCP implements AutoCloseable {
             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                 return res;
             } else {
-                throw new RuntimeException(String.format("status returned by database server was %s", status));
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
             }
         } catch (Throwable th) {
             throw new RuntimeException(th);
