@@ -207,19 +207,13 @@ public sealed class PQ implements AutoCloseable permits PQX {
     public PGPing ping(
             final MemorySegment connInfo) throws Throwable {
 
-        switch ((int) pingHandle.invokeExact(connInfo)) {
-            case 0:
-                return PGPing.PQPING_OK;
-            case 1:
-                return PGPing.PQPING_REJECT;
-            case 2:
-                return PGPing.PQPING_NO_RESPONSE;
-            case 3:
-                return PGPing.PQPING_NO_ATTEMPT;
-
-            default:
-                return PGPing.UNKNOWN;
-        }
+        return switch ((int) pingHandle.invokeExact(connInfo)) {
+            case 0 -> PGPing.PQPING_OK;
+            case 1 -> PGPing.PQPING_REJECT;
+            case 2 -> PGPing.PQPING_NO_RESPONSE;
+            case 3 -> PGPing.PQPING_NO_ATTEMPT;
+            default -> PGPing.UNKNOWN;
+        };
     }
 
     /**
@@ -246,15 +240,11 @@ public sealed class PQ implements AutoCloseable permits PQX {
     public ConnStatusType status(
             final MemorySegment conn) throws Throwable {
 
-        switch ((int) statusHandle.invokeExact(conn)) {
-            case 0:
-                return ConnStatusType.CONNECTION_OK;
-            case 1:
-                return ConnStatusType.CONNECTION_BAD;
-
-            default:
-                return ConnStatusType.UNKNOWN;
-        }
+        return switch ((int) statusHandle.invokeExact(conn)) {
+            case 0 -> ConnStatusType.CONNECTION_OK;
+            case 1 -> ConnStatusType.CONNECTION_BAD;
+            default -> ConnStatusType.UNKNOWN;
+        };
     }
 
     /**
@@ -263,21 +253,14 @@ public sealed class PQ implements AutoCloseable permits PQX {
     public PGTransactionStatusType transactionStatus(
             final MemorySegment conn) throws Throwable {
 
-        switch ((int) transactionStatusHandle.invokeExact(conn)) {
-            case 0:
-                return PGTransactionStatusType.PQTRANS_IDLE;
-            case 1:
-                return PGTransactionStatusType.PQTRANS_ACTIVE;
-            case 2:
-                return PGTransactionStatusType.PQTRANS_INTRANS;
-            case 3:
-                return PGTransactionStatusType.PQTRANS_INERROR;
-            case 4:
-                return PGTransactionStatusType.PQTRANS_UNKNOWN;
-
-            default:
-                return PGTransactionStatusType.UNKNOWN;
-        }
+        return switch ((int) transactionStatusHandle.invokeExact(conn)) {
+            case 0 -> PGTransactionStatusType.PQTRANS_IDLE;
+            case 1 -> PGTransactionStatusType.PQTRANS_ACTIVE;
+            case 2 -> PGTransactionStatusType.PQTRANS_INTRANS;
+            case 3 -> PGTransactionStatusType.PQTRANS_INERROR;
+            case 4 -> PGTransactionStatusType.PQTRANS_UNKNOWN;
+            default -> PGTransactionStatusType.UNKNOWN;
+        };
     }
 
     /**
@@ -378,35 +361,21 @@ public sealed class PQ implements AutoCloseable permits PQX {
     public ExecStatusType resultStatus(
             final MemorySegment res) throws Throwable {
 
-        switch ((int) resultStatusHandle.invokeExact(res)) {
-            case 0:
-                return ExecStatusType.PGRES_EMPTY_QUERY;
-            case 1:
-                return ExecStatusType.PGRES_COMMAND_OK;
-            case 2:
-                return ExecStatusType.PGRES_TUPLES_OK;
-            case 3:
-                return ExecStatusType.PGRES_COPY_OUT;
-            case 4:
-                return ExecStatusType.PGRES_COPY_IN;
-            case 5:
-                return ExecStatusType.PGRES_BAD_RESPONSE;
-            case 6:
-                return ExecStatusType.PGRES_NONFATAL_ERROR;
-            case 7:
-                return ExecStatusType.PGRES_FATAL_ERROR;
-            case 8:
-                return ExecStatusType.PGRES_COPY_BOTH;
-            case 9:
-                return ExecStatusType.PGRES_SINGLE_TUPLE;
-            case 10:
-                return ExecStatusType.PGRES_PIPELINE_SYNC;
-            case 11:
-                return ExecStatusType.PGRES_PIPELINE_ABORTED;
-
-            default:
-                return ExecStatusType.UNKNOWN;
-        }
+        return switch ((int) resultStatusHandle.invokeExact(res)) {
+            case 0 -> ExecStatusType.PGRES_EMPTY_QUERY;
+            case 1 -> ExecStatusType.PGRES_COMMAND_OK;
+            case 2 -> ExecStatusType.PGRES_TUPLES_OK;
+            case 3 -> ExecStatusType.PGRES_COPY_OUT;
+            case 4 -> ExecStatusType.PGRES_COPY_IN;
+            case 5 -> ExecStatusType.PGRES_BAD_RESPONSE;
+            case 6 -> ExecStatusType.PGRES_NONFATAL_ERROR;
+            case 7 -> ExecStatusType.PGRES_FATAL_ERROR;
+            case 8 -> ExecStatusType.PGRES_COPY_BOTH;
+            case 9 -> ExecStatusType.PGRES_SINGLE_TUPLE;
+            case 10 -> ExecStatusType.PGRES_PIPELINE_SYNC;
+            case 11 -> ExecStatusType.PGRES_PIPELINE_ABORTED;
+            default -> ExecStatusType.UNKNOWN;
+        };
     }
 
     /**
@@ -472,15 +441,11 @@ public sealed class PQ implements AutoCloseable permits PQX {
             final MemorySegment res,
             final int columnNumber) throws Throwable {
 
-        switch ((int) fFormatHandle.invokeExact(res, columnNumber)) {
-            case 0:
-                return FieldFormat.TEXT;
-            case 1:
-                return FieldFormat.BINARY;
-
-            default:
-                return FieldFormat.UNKNOWN;
-        }
+        return switch ((int) fFormatHandle.invokeExact(res, columnNumber)) {
+            case 0 -> FieldFormat.TEXT;
+            case 1 -> FieldFormat.BINARY;
+            default -> FieldFormat.UNKNOWN;
+        };
     }
 
     /**
@@ -522,12 +487,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
             final int rowNumber,
             final int columnNumber) throws Throwable {
 
-        switch ((int) getIsNullHandle.invokeExact(res, rowNumber, columnNumber)) {
-            case 0:
-                return false;
-            default:
-                return true;
-        }
+        return (int) getIsNullHandle.invokeExact(res, rowNumber, columnNumber) != 0;
     }
 
     /**
@@ -557,12 +517,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
             final MemorySegment conn,
             final MemorySegment command) throws Throwable {
 
-        switch ((int) sendQueryHandle.invokeExact(conn, command)) {
-            case 0:
-                return false;
-            default:
-                return true;
-        }
+        return (int) sendQueryHandle.invokeExact(conn, command) != 0;
     }
 
     /**
@@ -574,12 +529,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
             final MemorySegment query,
             final int nParams) throws Throwable {
 
-        switch ((int) sendPrepareHandle.invokeExact(conn, stmtName, query, nParams, NULL)) {
-            case 0:
-                return false;
-            default:
-                return true;
-        }
+        return (int) sendPrepareHandle.invokeExact(conn, stmtName, query, nParams, NULL) != 0;
     }
 
     /**
@@ -594,12 +544,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
             final MemorySegment paramFormats,
             final int resultFormat) throws Throwable {
 
-        switch ((int) sendQueryPreparedHandle.invokeExact(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, resultFormat)) {
-            case 0:
-                return false;
-            default:
-                return true;
-        }
+        return (int) sendQueryPreparedHandle.invokeExact(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, resultFormat) != 0;
     }
 
     /**
@@ -609,12 +554,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
             final MemorySegment conn,
             final MemorySegment stmtName) throws Throwable {
 
-        switch ((int) sendDescribePreparedHandle.invokeExact(conn, stmtName)) {
-            case 0:
-                return false;
-            default:
-                return true;
-        }
+        return (int) sendDescribePreparedHandle.invokeExact(conn, stmtName) != 0;
     }
 
     /**
@@ -632,12 +572,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     public boolean consumeInput(
             final MemorySegment conn) throws Throwable {
 
-        switch ((int) consumeInputHandle.invokeExact(conn)) {
-            case 0:
-                return false;
-            default:
-                return true;
-        }
+        return (int) consumeInputHandle.invokeExact(conn) != 0;
     }
 
     /**
@@ -646,12 +581,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     public boolean isBusy(
             final MemorySegment conn) throws Throwable {
 
-        switch ((int) isBusyHandle.invokeExact(conn)) {
-            case 0:
-                return false;
-            default:
-                return true;
-        }
+        return (int) isBusyHandle.invokeExact(conn) != 0;
     }
 
     @Override
