@@ -22,4 +22,4 @@
  *
  * @author Alireza Pourtaghi
  */
-package ir.jibit.pq.layouts;
+package com.lirezap.pq.layouts;

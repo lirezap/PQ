@@ -17,36 +17,36 @@
  *
  */
 
-package ir.jibit.pq.cp.xact;
+package com.lirezap.pq.cp.xact;
 
 /**
- * Different access modes; used in transaction blocks.
- * The transaction access mode determines whether the transaction is read/write or read-only.
+ * Different deferrable modes; used in transaction blocks.
+ * This transaction property has no effect unless the transaction is also SERIALIZABLE and READ ONLY.
  *
  * @author Alireza Pourtaghi
  */
-public enum AccessMode {
+public enum DeferrableMode {
     /**
      * None; results in default one.
      */
     NONE(null),
 
     /**
-     * Read/write is the default.
+     * When all three of these properties (SERIALIZABLE, READ ONLY and DEFERRABLE) are selected for a transaction, the
+     * transaction may block when first acquiring its snapshot, after which it is able to run without the normal
+     * overhead of a SERIALIZABLE transaction and without any risk of contributing to or being canceled by a
+     * serialization failure. This mode is well suited for long-running reports or backups.
      */
-    READ_WRITE("READ WRITE"),
+    DEFERRABLE("DEFERRABLE"),
 
     /**
-     * When a transaction is read-only, the following SQL commands are disallowed: INSERT, UPDATE, DELETE, MERGE, and
-     * COPY FROM if the table they would write to is not a temporary table; all CREATE, ALTER, and DROP commands;
-     * COMMENT, GRANT, REVOKE, TRUNCATE; and EXPLAIN ANALYZE and EXECUTE if the command they would execute is among
-     * those listed. This is a high-level notion of read-only that does not prevent all writes to disk.
+     * This is the default.
      */
-    READ_ONLY("READ ONLY");
+    NOT_DEFERRABLE("NOT DEFERRABLE");
 
     private final String value;
 
-    AccessMode(final String value) {
+    DeferrableMode(final String value) {
         this.value = value;
     }
 

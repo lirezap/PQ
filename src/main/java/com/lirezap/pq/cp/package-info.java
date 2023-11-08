@@ -18,8 +18,8 @@
  */
 
 /**
- * <h2>Standard C library functions</h2>
+ * <h2>Synchronous and asynchronous connection pool implementations</h2>
  *
  * @author Alireza Pourtaghi
  */
-package ir.jibit.pq.std;
+package com.lirezap.pq.cp;

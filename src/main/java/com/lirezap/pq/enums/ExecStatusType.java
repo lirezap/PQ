@@ -17,7 +17,7 @@
  *
  */
 
-package ir.jibit.pq.enums;
+package com.lirezap.pq.enums;
 
 /**
  * Postgresql C library ConnStatusType enum.

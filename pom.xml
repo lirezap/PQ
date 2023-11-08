@@ -12,7 +12,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>ir.jibit</groupId>
+    <groupId>com.lirezap</groupId>
     <artifactId>pq</artifactId>
     <version>0.0.40</version>
     <name>pq</name>

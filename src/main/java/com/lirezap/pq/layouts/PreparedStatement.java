@@ -17,15 +17,15 @@
  *
  */
 
-package ir.jibit.pq.layouts;
+package com.lirezap.pq.layouts;
+
+import com.lirezap.pq.enums.FieldFormat;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
 
-import static ir.jibit.pq.enums.FieldFormat.BINARY;
-import static ir.jibit.pq.enums.FieldFormat.TEXT;
 import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
 import static java.lang.foreign.MemoryLayout.paddingLayout;
 import static java.lang.foreign.MemoryLayout.structLayout;
@@ -141,7 +141,7 @@ public final class PreparedStatement {
             PreparedStatement_paramLengths_varHandle.set(preparedStatement, paramLengths);
 
             final var paramFormats = arena.allocateArray(JAVA_INT, 1);
-            paramFormats.setAtIndex(JAVA_INT, 0, TEXT.getSpecifier());
+            paramFormats.setAtIndex(JAVA_INT, 0, FieldFormat.TEXT.getSpecifier());
             PreparedStatement_paramFormats_varHandle.set(preparedStatement, paramFormats);
         } else if (previousNParams >= 1) {
             // previousNParams >= 1
@@ -160,7 +160,7 @@ public final class PreparedStatement {
             final var previousParamFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
             final var newParamFormats = arena.allocateArray(JAVA_INT, previousNParams + 1);
             newParamFormats.copyFrom(previousParamFormats.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
-            newParamFormats.setAtIndex(JAVA_INT, previousNParams, TEXT.getSpecifier());
+            newParamFormats.setAtIndex(JAVA_INT, previousNParams, FieldFormat.TEXT.getSpecifier());
             PreparedStatement_paramFormats_varHandle.set(preparedStatement, newParamFormats);
         } else {
             throw new RuntimeException("provided pointer to prepared statement is tampered!");
@@ -201,7 +201,7 @@ public final class PreparedStatement {
             PreparedStatement_paramLengths_varHandle.set(preparedStatement, paramLengths);
 
             final var paramFormats = arena.allocateArray(JAVA_INT, 1);
-            paramFormats.setAtIndex(JAVA_INT, 0, BINARY.getSpecifier());
+            paramFormats.setAtIndex(JAVA_INT, 0, FieldFormat.BINARY.getSpecifier());
             PreparedStatement_paramFormats_varHandle.set(preparedStatement, paramFormats);
         } else if (previousNParams >= 1) {
             // previousNParams >= 1
@@ -220,7 +220,7 @@ public final class PreparedStatement {
             final var previousParamFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
             final var newParamFormats = arena.allocateArray(JAVA_INT, previousNParams + 1);
             newParamFormats.copyFrom(previousParamFormats.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
-            newParamFormats.setAtIndex(JAVA_INT, previousNParams, BINARY.getSpecifier());
+            newParamFormats.setAtIndex(JAVA_INT, previousNParams, FieldFormat.BINARY.getSpecifier());
             PreparedStatement_paramFormats_varHandle.set(preparedStatement, newParamFormats);
         } else {
             throw new RuntimeException("provided pointer to prepared statement is tampered!");

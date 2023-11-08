@@ -17,7 +17,7 @@
  *
  */
 
-package ir.jibit.pq.std;
+package com.lirezap.pq.std;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;

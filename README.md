@@ -86,7 +86,7 @@ Then add PQ dependency into your maven project:
 ```xml
 
 <dependency>
-    <groupId>ir.jibit</groupId>
+    <groupId>com.lirezap</groupId>
     <artifactId>pq</artifactId>
     <version>0.0.40</version>
 </dependency>
@@ -95,10 +95,10 @@ Then add PQ dependency into your maven project:
 Then the library can be used as in:
 
 ```java
-package ir.jibit.Application;
+package com.lirezap.Application;
 
-import ir.jibit.pq.cp.PQCP;
-import ir.jibit.pq.layouts.PreparedStatement;
+import com.lirezap.pq.cp.PQCP;
+import com.lirezap.pq.layouts.PreparedStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -17,20 +17,20 @@
  *
  */
 
-package ir.jibit.pq;
+package com.lirezap.pq;
 
-import ir.jibit.pq.enums.PGPing;
+import com.lirezap.pq.enums.FieldFormat;
+import com.lirezap.pq.enums.PGPing;
+import com.lirezap.pq.layouts.PreparedStatement;
+import com.lirezap.pq.std.CString;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static ir.jibit.pq.enums.FieldFormat.BINARY;
-import static ir.jibit.pq.enums.FieldFormat.TEXT;
-import static ir.jibit.pq.layouts.PQConnInfoOption.*;
-import static ir.jibit.pq.layouts.PreparedStatement.*;
-import static ir.jibit.pq.std.CString.strlen;
+import static com.lirezap.pq.layouts.PQConnInfoOption.*;
+import static com.lirezap.pq.layouts.PreparedStatement.*;
 import static java.lang.foreign.MemorySegment.NULL;
 
 /**
@@ -99,7 +99,7 @@ public final class PQX extends PQ {
             final MemorySegment conn) throws Throwable {
 
         final var db = db(conn);
-        return db.reinterpret(strlen(db) + 1).getUtf8String(0);
+        return db.reinterpret(CString.strlen(db) + 1).getUtf8String(0);
     }
 
     /**
@@ -109,7 +109,7 @@ public final class PQX extends PQ {
             final MemorySegment conn) throws Throwable {
 
         final var errorMessage = errorMessage(conn);
-        return errorMessage.reinterpret(strlen(errorMessage) + 1).getUtf8String(0);
+        return errorMessage.reinterpret(CString.strlen(errorMessage) + 1).getUtf8String(0);
     }
 
     /**
@@ -156,7 +156,7 @@ public final class PQX extends PQ {
      * Executes a prepared statement by using pointers provided as struct fields in parameter.
      *
      * @param conn              postgresql database connection
-     * @param preparedStatement pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @param preparedStatement pointer to an instance of {@link PreparedStatement} struct
      * @return pointer to a postgresql result model in text format
      */
     public MemorySegment execPreparedTextResult(
@@ -169,14 +169,14 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
         final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
-        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, TEXT.getSpecifier());
+        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, FieldFormat.TEXT.getSpecifier());
     }
 
     /**
      * Executes a prepared statement by using pointers provided as struct fields in parameter.
      *
      * @param conn              postgresql database connection
-     * @param preparedStatement pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @param preparedStatement pointer to an instance of {@link PreparedStatement} struct
      * @return pointer to a postgresql result model in binary format
      */
     public MemorySegment execPreparedBinaryResult(
@@ -189,7 +189,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
         final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
-        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, BINARY.getSpecifier());
+        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, FieldFormat.BINARY.getSpecifier());
     }
 
     /**
@@ -199,7 +199,7 @@ public final class PQX extends PQ {
             final MemorySegment res) throws Throwable {
 
         final var resultErrorMessage = resultErrorMessage(res);
-        return resultErrorMessage.reinterpret(strlen(resultErrorMessage) + 1).getUtf8String(0);
+        return resultErrorMessage.reinterpret(CString.strlen(resultErrorMessage) + 1).getUtf8String(0);
     }
 
     /**
@@ -211,7 +211,7 @@ public final class PQX extends PQ {
 
         final var name = fName(res, columnNumber);
         if (!name.equals(NULL)) {
-            return Optional.of(name.reinterpret(strlen(name) + 1).getUtf8String(0));
+            return Optional.of(name.reinterpret(CString.strlen(name) + 1).getUtf8String(0));
         }
 
         return Optional.empty();
@@ -241,7 +241,7 @@ public final class PQX extends PQ {
             final MemorySegment res) throws Throwable {
 
         final var cmdTuples = cmdTuples(res);
-        final var countString = cmdTuples.reinterpret(strlen(cmdTuples) + 1).getUtf8String(0);
+        final var countString = cmdTuples.reinterpret(CString.strlen(cmdTuples) + 1).getUtf8String(0);
         if (!countString.isBlank()) {
             return Integer.parseInt(countString);
         }
@@ -267,7 +267,7 @@ public final class PQX extends PQ {
      * Executes a prepared statement asynchronously by using pointers provided as struct fields in parameter.
      *
      * @param conn              postgresql database connection
-     * @param preparedStatement pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @param preparedStatement pointer to an instance of {@link PreparedStatement} struct
      * @return true if submit was successful otherwise false
      */
     public boolean sendQueryPreparedTextResult(
@@ -280,14 +280,14 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
         final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
-        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, TEXT.getSpecifier());
+        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, FieldFormat.TEXT.getSpecifier());
     }
 
     /**
      * Executes a prepared statement asynchronously by using pointers provided as struct fields in parameter.
      *
      * @param conn              postgresql database connection
-     * @param preparedStatement pointer to an instance of {@link ir.jibit.pq.layouts.PreparedStatement} struct
+     * @param preparedStatement pointer to an instance of {@link PreparedStatement} struct
      * @return true if submit was successful otherwise false
      */
     public boolean sendQueryPreparedBinaryResult(
@@ -300,7 +300,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
         final var paramFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
 
-        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, BINARY.getSpecifier());
+        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, FieldFormat.BINARY.getSpecifier());
     }
 
     /**
@@ -322,11 +322,11 @@ public final class PQX extends PQ {
                 final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
 
                 if (!keywordPtr.equals(NULL)) {
-                    if (keywordPtr.reinterpret(strlen(keywordPtr) + 1).getUtf8String(0).equals(keyword)) {
+                    if (keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getUtf8String(0).equals(keyword)) {
                         final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
                         if (!valPtr.equals(NULL)) {
                             // Found keyword and has value.
-                            return Optional.of(valPtr.reinterpret(strlen(valPtr) + 1).getUtf8String(0));
+                            return Optional.of(valPtr.reinterpret(CString.strlen(valPtr) + 1).getUtf8String(0));
                         } else {
                             // Found keyword but its value is null.
                             return Optional.empty();
@@ -361,9 +361,9 @@ public final class PQX extends PQ {
                 if (keywordPtr.equals(NULL)) {
                     break;
                 } else {
-                    System.out.print(keywordPtr.reinterpret(strlen(keywordPtr) + 1).getUtf8String(0) + ": ");
+                    System.out.print(keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getUtf8String(0) + ": ");
                     if (!valPtr.equals(NULL)) {
-                        System.out.print(valPtr.reinterpret(strlen(valPtr) + 1).getUtf8String(0));
+                        System.out.print(valPtr.reinterpret(CString.strlen(valPtr) + 1).getUtf8String(0));
                     }
 
                     System.out.println();

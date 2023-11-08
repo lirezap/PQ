@@ -17,9 +17,9 @@
  *
  */
 
-package ir.jibit.pq;
+package com.lirezap.pq;
 
-import ir.jibit.pq.enums.*;
+import com.lirezap.pq.enums.*;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;

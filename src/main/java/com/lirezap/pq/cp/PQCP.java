@@ -17,18 +17,19 @@
  *
  */
 
-package ir.jibit.pq.cp;
+package com.lirezap.pq.cp;
 
-import ir.jibit.pq.PQ;
-import ir.jibit.pq.PQX;
-import ir.jibit.pq.cp.xact.AccessMode;
-import ir.jibit.pq.cp.xact.DeferrableMode;
-import ir.jibit.pq.cp.xact.IsolationLevel;
-import ir.jibit.pq.cp.xact.TransactionBlock;
-import ir.jibit.pq.enums.ConnStatusType;
-import ir.jibit.pq.enums.ExecStatusType;
-import ir.jibit.pq.enums.FieldFormat;
-import ir.jibit.pq.layouts.PreparedStatement;
+import com.lirezap.pq.PQ;
+import com.lirezap.pq.PQX;
+import com.lirezap.pq.cp.xact.AccessMode;
+import com.lirezap.pq.cp.xact.DeferrableMode;
+import com.lirezap.pq.cp.xact.IsolationLevel;
+import com.lirezap.pq.cp.xact.TransactionBlock;
+import com.lirezap.pq.enums.ConnStatusType;
+import com.lirezap.pq.enums.ExecStatusType;
+import com.lirezap.pq.enums.FieldFormat;
+import com.lirezap.pq.layouts.PreparedStatement;
+import com.lirezap.pq.std.CString;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -44,8 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import static ir.jibit.pq.layouts.PreparedStatement.*;
-import static ir.jibit.pq.std.CString.strlen;
+import static com.lirezap.pq.layouts.PreparedStatement.*;
 
 /**
  * A connection pool implementation using {@link PQ}.
@@ -660,8 +660,8 @@ public class PQCP implements AutoCloseable {
             final MemorySegment query) throws Throwable {
 
         final var ps = PreparedStatement.create(arena);
-        PreparedStatement.setStmtName(arena, ps, stmtName.reinterpret(strlen(stmtName) + 1).getUtf8String(0));
-        PreparedStatement.setQuery(arena, ps, query.reinterpret(strlen(query) + 1).getUtf8String(0));
+        PreparedStatement.setStmtName(arena, ps, stmtName.reinterpret(CString.strlen(stmtName) + 1).getUtf8String(0));
+        PreparedStatement.setQuery(arena, ps, query.reinterpret(CString.strlen(query) + 1).getUtf8String(0));
         PreparedStatement.setNParams(ps, (int) PreparedStatement_nParams_varHandle.get(preparedStatement));
         preparedStatements.add(ps);
 

@@ -17,41 +17,36 @@
  *
  */
 
-package ir.jibit.pq.enums;
+package com.lirezap.pq.enums;
 
 /**
- * Postgresql C library PGTransactionStatusType enum.
+ * Field (column) data representation format.
  *
  * @author Alireza Pourtaghi
  */
-public enum PGTransactionStatusType {
+public enum FieldFormat {
     /**
-     * Connection idle.
+     * Text data representation format.
      */
-    PQTRANS_IDLE,
+    TEXT(0),
 
     /**
-     * Command in progress.
+     * Binary data representation format.
      */
-    PQTRANS_ACTIVE,
+    BINARY(1),
 
     /**
-     * Idle, within transaction block.
+     * Unknown data representation format.
      */
-    PQTRANS_INTRANS,
+    UNKNOWN(-1);
 
-    /**
-     * Idle, within failed transaction.
-     */
-    PQTRANS_INERROR,
+    private final int specifier;
 
-    /**
-     * Cannot determine status.
-     */
-    PQTRANS_UNKNOWN,
+    FieldFormat(int specifier) {
+        this.specifier = specifier;
+    }
 
-    /**
-     * Transaction status unknown.
-     */
-    UNKNOWN
+    public int getSpecifier() {
+        return specifier;
+    }
 }

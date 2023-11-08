@@ -17,39 +17,41 @@
  *
  */
 
-package ir.jibit.pq.enums;
+package com.lirezap.pq.enums;
 
 /**
- * Postgresql C library PGPing enum.
+ * Postgresql C library PGTransactionStatusType enum.
  *
  * @author Alireza Pourtaghi
  */
-public enum PGPing {
+public enum PGTransactionStatusType {
     /**
-     * The server is running and appears to be accepting connections.
+     * Connection idle.
      */
-    PQPING_OK,
+    PQTRANS_IDLE,
 
     /**
-     * The server is running but is in a state that disallows connections (startup, shutdown, or crash recovery).
+     * Command in progress.
      */
-    PQPING_REJECT,
+    PQTRANS_ACTIVE,
 
     /**
-     * The server could not be contacted. This might indicate that the server is not running, or that there is something
-     * wrong with the given connection parameters (for example, wrong port number), or that there is a network
-     * connectivity problem (for example, a firewall blocking the connection request).
+     * Idle, within transaction block.
      */
-    PQPING_NO_RESPONSE,
+    PQTRANS_INTRANS,
 
     /**
-     * No attempt was made to contact the server, because the supplied parameters were obviously incorrect or there was
-     * some client-side problem (for example, out of memory).
+     * Idle, within failed transaction.
      */
-    PQPING_NO_ATTEMPT,
+    PQTRANS_INERROR,
 
     /**
-     * Ping status unknown.
+     * Cannot determine status.
+     */
+    PQTRANS_UNKNOWN,
+
+    /**
+     * Transaction status unknown.
      */
     UNKNOWN
 }
