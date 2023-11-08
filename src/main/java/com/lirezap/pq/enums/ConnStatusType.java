@@ -17,36 +17,26 @@
  *
  */
 
-package ir.jibit.pq.enums;
+package com.lirezap.pq.enums;
 
 /**
- * Field (column) data representation format.
+ * Postgresql C library ConnStatusType enum.
  *
  * @author Alireza Pourtaghi
  */
-public enum FieldFormat {
+public enum ConnStatusType {
     /**
-     * Text data representation format.
+     * Connection status ok.
      */
-    TEXT(0),
-
-    /**
-     * Binary data representation format.
-     */
-    BINARY(1),
+    CONNECTION_OK,
 
     /**
-     * Unknown data representation format.
+     * Connection status not ok.
      */
-    UNKNOWN(-1);
+    CONNECTION_BAD,
 
-    private final int specifier;
-
-    FieldFormat(int specifier) {
-        this.specifier = specifier;
-    }
-
-    public int getSpecifier() {
-        return specifier;
-    }
+    /**
+     * Connection status unknown.
+     */
+    UNKNOWN
 }

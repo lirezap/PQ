@@ -17,7 +17,7 @@
  *
  */
 
-package ir.jibit.pq.layouts;
+package com.lirezap.pq.layouts;
 
 import java.lang.foreign.SequenceLayout;
 import java.lang.foreign.StructLayout;

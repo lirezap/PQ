@@ -17,26 +17,36 @@
  *
  */
 
-package ir.jibit.pq.enums;
+package com.lirezap.pq.cp.xact;
+
+import java.lang.foreign.MemorySegment;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Postgresql C library ConnStatusType enum.
+ * Transaction block abstraction; that includes conn in transaction, pool index and done status handle.
  *
- * @author Alireza Pourtaghi
+ * @author Alireza pourtaghi
  */
-public enum ConnStatusType {
-    /**
-     * Connection status ok.
-     */
-    CONNECTION_OK,
+public final class TransactionBlock {
+    private final int index;
+    private final MemorySegment conn;
+    private final AtomicBoolean done;
 
-    /**
-     * Connection status not ok.
-     */
-    CONNECTION_BAD,
+    public TransactionBlock(final int index, final MemorySegment conn) {
+        this.index = index;
+        this.conn = conn;
+        this.done = new AtomicBoolean(false);
+    }
 
-    /**
-     * Connection status unknown.
-     */
-    UNKNOWN
+    public int getIndex() {
+        return index;
+    }
+
+    public MemorySegment getConn() {
+        return conn;
+    }
+
+    public AtomicBoolean getDone() {
+        return done;
+    }
 }

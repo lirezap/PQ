@@ -18,8 +18,8 @@
  */
 
 /**
- * <h2>Transaction block related model definitions</h2>
+ * <h2>Standard C library functions</h2>
  *
  * @author Alireza Pourtaghi
  */
-package ir.jibit.pq.cp.xact;
+package com.lirezap.pq.std;

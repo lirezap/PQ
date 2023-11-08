@@ -17,9 +17,9 @@
  *
  */
 
-package ir.jibit.pq.cp;
+package com.lirezap.pq.cp;
 
-import ir.jibit.pq.enums.ExecStatusType;
+import com.lirezap.pq.enums.ExecStatusType;
 
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
@@ -28,7 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
-import static ir.jibit.pq.layouts.PreparedStatement.PreparedStatement_stmtName_varHandle;
+import static com.lirezap.pq.layouts.PreparedStatement.PreparedStatement_stmtName_varHandle;
 
 /**
  * An asynchronous connection pool implementation based on {@link PQCP}.

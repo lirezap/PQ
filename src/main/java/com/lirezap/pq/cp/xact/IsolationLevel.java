@@ -17,7 +17,7 @@
  *
  */
 
-package ir.jibit.pq.cp.xact;
+package com.lirezap.pq.cp.xact;
 
 /**
  * Different isolation levels; used in transaction blocks.

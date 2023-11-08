@@ -18,8 +18,8 @@
  */
 
 /**
- * <h2>Synchronous and asynchronous connection pool implementations</h2>
+ * <h2>Enum definitions of postgresql C library or internally used ones</h2>
  *
  * @author Alireza Pourtaghi
  */
-package ir.jibit.pq.cp;
+package com.lirezap.pq.enums;
