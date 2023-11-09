@@ -17,36 +17,9 @@
  *
  */
 
-package com.lirezap.pq.enums;
-
 /**
- * Field (column) data representation format.
+ * <h2>Type definitions of postgresql C library or internally used ones</h2>
  *
  * @author Alireza Pourtaghi
  */
-public enum FieldFormat {
-    /**
-     * Text data representation format.
-     */
-    TEXT(0),
-
-    /**
-     * Binary data representation format.
-     */
-    BINARY(1),
-
-    /**
-     * Unknown data representation format.
-     */
-    UNKNOWN(-1);
-
-    private final int specifier;
-
-    FieldFormat(int specifier) {
-        this.specifier = specifier;
-    }
-
-    public int getSpecifier() {
-        return specifier;
-    }
-}
+package com.lirezap.pq.types;

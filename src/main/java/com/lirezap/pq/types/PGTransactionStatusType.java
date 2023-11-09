@@ -17,7 +17,7 @@
  *
  */
 
-package com.lirezap.pq.enums;
+package com.lirezap.pq.types;
 
 /**
  * Postgresql C library PGTransactionStatusType enum.
