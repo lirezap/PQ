@@ -19,7 +19,7 @@
 
 package com.lirezap.pq.cp;
 
-import com.lirezap.pq.enums.ExecStatusType;
+import com.lirezap.pq.types.ExecStatusType;
 
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;

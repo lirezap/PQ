@@ -25,11 +25,11 @@ import com.lirezap.pq.cp.xact.AccessMode;
 import com.lirezap.pq.cp.xact.DeferrableMode;
 import com.lirezap.pq.cp.xact.IsolationLevel;
 import com.lirezap.pq.cp.xact.TransactionBlock;
-import com.lirezap.pq.enums.ConnStatusType;
-import com.lirezap.pq.enums.ExecStatusType;
-import com.lirezap.pq.enums.FieldFormat;
 import com.lirezap.pq.layouts.PreparedStatement;
 import com.lirezap.pq.std.CString;
+import com.lirezap.pq.types.ConnStatusType;
+import com.lirezap.pq.types.ExecStatusType;
+import com.lirezap.pq.types.FieldFormat;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;

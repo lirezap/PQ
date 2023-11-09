@@ -19,7 +19,7 @@
 
 package com.lirezap.pq.layouts;
 
-import com.lirezap.pq.enums.FieldFormat;
+import com.lirezap.pq.types.FieldFormat;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;

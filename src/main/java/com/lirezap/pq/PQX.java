@@ -19,10 +19,10 @@
 
 package com.lirezap.pq;
 
-import com.lirezap.pq.enums.FieldFormat;
-import com.lirezap.pq.enums.PGPing;
 import com.lirezap.pq.layouts.PreparedStatement;
 import com.lirezap.pq.std.CString;
+import com.lirezap.pq.types.FieldFormat;
+import com.lirezap.pq.types.PGPing;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;

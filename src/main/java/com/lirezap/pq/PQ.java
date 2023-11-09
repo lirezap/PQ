@@ -19,7 +19,7 @@
 
 package com.lirezap.pq;
 
-import com.lirezap.pq.enums.*;
+import com.lirezap.pq.types.*;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
