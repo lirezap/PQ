@@ -52,13 +52,8 @@ import static com.lirezap.pq.layouts.PreparedStatement.*;
  *
  * @author Alireza Pourtaghi
  */
-public class PQCP implements AutoCloseable {
+public class PQCP implements Configurable, AutoCloseable {
     private static final Logger logger = Logger.getLogger(PQCP.class.getName());
-
-    public static final int DEFAULT_MIN_POOL_SIZE = 10;
-    public static final int DEFAULT_MAX_POOL_SIZE = 25;
-    public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
-    public static final int DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT = 10;
 
     protected final int minPoolSize;
     protected final int maxPoolSize;
