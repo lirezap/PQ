@@ -43,7 +43,7 @@ public final class PQX extends PQ {
     /**
      * Same as {@link PQ} constructor with extended features.
      *
-     * @param path shared object (or dynamic) postgresql C library 's path
+     * @param path shared object (or dynamic) postgresql C library's path
      */
     public PQX(
             final Path path) {
