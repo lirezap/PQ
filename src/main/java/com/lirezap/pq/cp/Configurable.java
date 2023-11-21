@@ -31,4 +31,5 @@ interface Configurable {
     int DEFAULT_MAX_POOL_SIZE = 25;
     Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
     int DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT = 10;
+    Duration DEFAULT_CHECK_CONNECTION_STATUS_PERIOD = Duration.ofSeconds(5);
 }

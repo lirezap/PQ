@@ -37,9 +37,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
@@ -55,12 +53,14 @@ import static com.lirezap.pq.layouts.PreparedStatement.*;
 public class PQCP implements Configurable, AutoCloseable {
     private static final Logger logger = Logger.getLogger(PQCP.class.getName());
 
+    private final ScheduledExecutorService statusCheckerExecutorService;
     protected final int minPoolSize;
     protected final int maxPoolSize;
     protected final AtomicInteger poolSize;
     protected final Duration connectTimeout;
     protected final AtomicInteger notAvailableConnectionCounter;
     protected final int makeNewConnectionCoefficient;
+    protected final Duration checkConnectionStatusPeriod;
 
     protected final PQX pqx;
     protected final String connInfo;
@@ -79,7 +79,8 @@ public class PQCP implements Configurable, AutoCloseable {
                 DEFAULT_MIN_POOL_SIZE,
                 DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_CONNECT_TIMEOUT,
-                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD);
     }
 
     public PQCP(
@@ -92,7 +93,8 @@ public class PQCP implements Configurable, AutoCloseable {
                 minPoolSize,
                 DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_CONNECT_TIMEOUT,
-                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD);
     }
 
     public PQCP(
@@ -106,7 +108,8 @@ public class PQCP implements Configurable, AutoCloseable {
                 minPoolSize,
                 maxPoolSize,
                 DEFAULT_CONNECT_TIMEOUT,
-                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD);
     }
 
     public PQCP(
@@ -121,7 +124,8 @@ public class PQCP implements Configurable, AutoCloseable {
                 minPoolSize,
                 maxPoolSize,
                 connectTimeout,
-                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT);
+                DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD);
     }
 
     public PQCP(
@@ -132,6 +136,24 @@ public class PQCP implements Configurable, AutoCloseable {
             final Duration connectTimeout,
             final int makeNewConnectionCoefficient) throws Exception {
 
+        this(path,
+                connInfo,
+                minPoolSize,
+                maxPoolSize,
+                connectTimeout,
+                makeNewConnectionCoefficient,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD);
+    }
+
+    public PQCP(
+            final Path path,
+            final String connInfo,
+            final int minPoolSize,
+            final int maxPoolSize,
+            final Duration connectTimeout,
+            final int makeNewConnectionCoefficient,
+            final Duration checkConnectionStatusPeriod) throws Exception {
+
         if (minPoolSize > maxPoolSize) {
             throw new IllegalArgumentException("minPoolSize > maxPoolSize");
         }
@@ -140,12 +162,14 @@ public class PQCP implements Configurable, AutoCloseable {
             throw new IllegalArgumentException("makeNewConnectionCoefficient is negative");
         }
 
+        this.statusCheckerExecutorService = Executors.newSingleThreadScheduledExecutor();
         this.minPoolSize = minPoolSize > 0 ? minPoolSize : DEFAULT_MIN_POOL_SIZE;
         this.maxPoolSize = maxPoolSize > 0 ? maxPoolSize : DEFAULT_MAX_POOL_SIZE;
         this.poolSize = new AtomicInteger(minPoolSize);
         this.connectTimeout = connectTimeout != null ? connectTimeout : DEFAULT_CONNECT_TIMEOUT;
         this.notAvailableConnectionCounter = new AtomicInteger(0);
         this.makeNewConnectionCoefficient = makeNewConnectionCoefficient > 0 ? makeNewConnectionCoefficient : DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT;
+        this.checkConnectionStatusPeriod = checkConnectionStatusPeriod != null ? checkConnectionStatusPeriod : DEFAULT_CHECK_CONNECTION_STATUS_PERIOD;
 
         this.pqx = new PQX(path);
         this.connInfo = connInfo;
@@ -160,6 +184,7 @@ public class PQCP implements Configurable, AutoCloseable {
         }
 
         logBasicServerInfo(this);
+        scheduleStatusCheck(this);
     }
 
     public void prepare(
@@ -853,6 +878,38 @@ public class PQCP implements Configurable, AutoCloseable {
         }
     }
 
+    private static void scheduleStatusCheck(
+            final PQCP cp) {
+
+        cp.statusCheckerExecutorService.scheduleAtFixedRate(
+                () -> checkStatus(cp),
+                0L,
+                cp.checkConnectionStatusPeriod.toMillis(),
+                TimeUnit.MILLISECONDS);
+    }
+
+    private static void checkStatus(
+            final PQCP cp) {
+
+        for (int i = 0; i < cp.maxPoolSize; i++) {
+            if (cp.connections[i] != null) {
+                try {
+                    if (cp.pqx.status(cp.connections[i]) == ConnStatusType.CONNECTION_BAD) {
+                        logger.info("going to reset a bad connection ...");
+
+                        // Blocks checkConnectionStatusPeriod time for a connection to be available for resetting.
+                        if (cp.locks[i].tryAcquire(cp.checkConnectionStatusPeriod.toMillis(), TimeUnit.MILLISECONDS)) {
+                            cp.pqx.reset(cp.connections[i]);
+                            cp.locks[i].release();
+                        }
+                    }
+                } catch (Throwable th) {
+                    logger.warning(String.format("could not check connection status: %s", th.getMessage()));
+                }
+            }
+        }
+    }
+
     @Override
     public void close() throws Exception {
         for (int conn = 0; conn < maxPoolSize; conn++) {
@@ -868,6 +925,7 @@ public class PQCP implements Configurable, AutoCloseable {
             }
         }
 
+        statusCheckerExecutorService.shutdown();
         pqx.close();
         arena.close();
     }
