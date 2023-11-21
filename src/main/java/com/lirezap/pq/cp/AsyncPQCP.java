@@ -49,6 +49,7 @@ public class AsyncPQCP extends PQCP {
                 DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_CONNECT_TIMEOUT,
                 DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD,
                 executor);
     }
 
@@ -64,6 +65,7 @@ public class AsyncPQCP extends PQCP {
                 DEFAULT_MAX_POOL_SIZE,
                 DEFAULT_CONNECT_TIMEOUT,
                 DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD,
                 executor);
     }
 
@@ -80,6 +82,7 @@ public class AsyncPQCP extends PQCP {
                 maxPoolSize,
                 DEFAULT_CONNECT_TIMEOUT,
                 DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD,
                 executor);
     }
 
@@ -97,6 +100,7 @@ public class AsyncPQCP extends PQCP {
                 maxPoolSize,
                 connectTimeout,
                 DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD,
                 executor);
     }
 
@@ -109,7 +113,27 @@ public class AsyncPQCP extends PQCP {
             final int makeNewConnectionCoefficient,
             final ExecutorService executor) throws Exception {
 
-        super(path, connInfo, minPoolSize, maxPoolSize, connectTimeout, makeNewConnectionCoefficient);
+        this(path,
+                connInfo,
+                minPoolSize,
+                maxPoolSize,
+                connectTimeout,
+                makeNewConnectionCoefficient,
+                DEFAULT_CHECK_CONNECTION_STATUS_PERIOD,
+                executor);
+    }
+
+    public AsyncPQCP(
+            final Path path,
+            final String connInfo,
+            final int minPoolSize,
+            final int maxPoolSize,
+            final Duration connectTimeout,
+            final int makeNewConnectionCoefficient,
+            final Duration checkConnectionStatusPeriod,
+            final ExecutorService executor) throws Exception {
+
+        super(path, connInfo, minPoolSize, maxPoolSize, connectTimeout, makeNewConnectionCoefficient, checkConnectionStatusPeriod);
         this.executor = executor;
     }
 
