@@ -284,6 +284,21 @@ public final class PQX extends PQ {
     }
 
     /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQCANCEL">See official doc for more information.</a>
+     */
+    public void cancel(
+            final MemorySegment cancelPtr) throws Throwable {
+
+        try (final var arena = Arena.ofConfined()) {
+            final var errBuf = arena.allocate(256);
+            final var result = cancel(cancelPtr, errBuf, 256);
+            if (result == 0) {
+                throw new RuntimeException(errBuf.reinterpret(256).getUtf8String(0));
+            }
+        }
+    }
+
+    /**
      * Executes a prepared statement asynchronously by using pointers provided as struct fields in parameter.
      *
      * @param conn              postgresql database connection

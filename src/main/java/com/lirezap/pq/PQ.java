@@ -103,6 +103,11 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle consumeInputHandle;
     private final MethodHandle isBusyHandle;
 
+    // Canceling Queries In Progress
+    private final MethodHandle getCancel;
+    private final MethodHandle freeCancel;
+    private final MethodHandle cancel;
+
     /**
      * Creates memory allocator, native linker and library lookup instance to load shared object (or dynamic) postgresql
      * C library from provided path.
@@ -163,6 +168,11 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.getResultHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetResult.name()).orElseThrow(), FUNCTION.PQgetResult.fd);
         this.consumeInputHandle = linker.downcallHandle(lib.find(FUNCTION.PQconsumeInput.name()).orElseThrow(), FUNCTION.PQconsumeInput.fd);
         this.isBusyHandle = linker.downcallHandle(lib.find(FUNCTION.PQisBusy.name()).orElseThrow(), FUNCTION.PQisBusy.fd);
+
+        // Canceling Queries In Progress
+        this.getCancel = linker.downcallHandle(lib.find(FUNCTION.PQgetCancel.name()).orElseThrow(), FUNCTION.PQgetCancel.fd);
+        this.freeCancel = linker.downcallHandle(lib.find(FUNCTION.PQfreeCancel.name()).orElseThrow(), FUNCTION.PQfreeCancel.fd);
+        this.cancel = linker.downcallHandle(lib.find(FUNCTION.PQcancel.name()).orElseThrow(), FUNCTION.PQcancel.fd);
     }
 
     /**
@@ -584,6 +594,35 @@ public sealed class PQ implements AutoCloseable permits PQX {
         return (int) isBusyHandle.invokeExact(conn) != 0;
     }
 
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQGETCANCEL">See official doc for more information.</a>
+     */
+    public MemorySegment getCancel(
+            final MemorySegment conn) throws Throwable {
+
+        return (MemorySegment) getCancel.invokeExact(conn);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQFREECANCEL">See official doc for more information.</a>
+     */
+    public void freeCancel(
+            final MemorySegment cancelPtr) throws Throwable {
+
+        freeCancel.invokeExact(cancelPtr);
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQCANCEL">See official doc for more information.</a>
+     */
+    public int cancel(
+            final MemorySegment cancelPtr,
+            final MemorySegment errBuf,
+            final int errBufSize) throws Throwable {
+
+        return (int) cancel.invokeExact(cancelPtr, errBuf, errBufSize);
+    }
+
     @Override
     public void close() throws Exception {
         memory.close();
@@ -641,7 +680,12 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQsendDescribePrepared(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
         PQgetResult(FunctionDescriptor.of(ADDRESS, ADDRESS)),
         PQconsumeInput(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQisBusy(FunctionDescriptor.of(JAVA_INT, ADDRESS));
+        PQisBusy(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
+
+        // Canceling Queries In Progress
+        PQgetCancel(FunctionDescriptor.of(ADDRESS, ADDRESS)),
+        PQfreeCancel(FunctionDescriptor.ofVoid(ADDRESS)),
+        PQcancel(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT));
 
         public final FunctionDescriptor fd;
 
