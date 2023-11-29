@@ -138,8 +138,10 @@ public class AsyncPQCP extends PQCP {
     }
 
     public CompletableFuture<Void> prepareAsync(
-            final MemorySegment preparedStatement) {
+            final MemorySegment preparedStatement,
+            final Duration queryTimeout) {
 
+        final var start = System.nanoTime();
         final var result = new CompletableFuture<Void>();
         executor.submit(() -> {
             try {
@@ -148,7 +150,7 @@ public class AsyncPQCP extends PQCP {
                     if (locks[i] != null) {
                         try {
                             locks[i].acquire();
-                            prepareAsync(connections[i], preparedStatement, stmtName);
+                            prepareAsync(connections[i], preparedStatement, stmtName, start, queryTimeout);
                         } catch (Throwable th) {
                             result.completeExceptionally(th);
                             break;
@@ -168,8 +170,10 @@ public class AsyncPQCP extends PQCP {
     }
 
     public CompletableFuture<Integer> executeAsync(
-            final MemorySegment preparedStatement) {
+            final MemorySegment preparedStatement,
+            final Duration queryTimeout) {
 
+        final var start = System.nanoTime();
         final var result = new CompletableFuture<Integer>();
         executor.submit(() -> {
             try {
@@ -179,7 +183,7 @@ public class AsyncPQCP extends PQCP {
 
                 try {
                     if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
-                        final var res = loopGetResult(conn);
+                        final var res = loopGetResult(conn, start, queryTimeout);
                         try {
                             final var status = pqx.resultStatus(res);
                             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
@@ -211,8 +215,10 @@ public class AsyncPQCP extends PQCP {
     }
 
     public CompletableFuture<Integer> prepareThenExecuteAsync(
-            final MemorySegment preparedStatement) {
+            final MemorySegment preparedStatement,
+            final Duration queryTimeout) {
 
+        final var start = System.nanoTime();
         final var result = new CompletableFuture<Integer>();
         executor.submit(() -> {
             try {
@@ -222,9 +228,9 @@ public class AsyncPQCP extends PQCP {
                 var connReleased = false;
 
                 try {
-                    prepareAsync(conn, preparedStatement, stmtName);
+                    prepareAsync(conn, preparedStatement, stmtName, start, queryTimeout);
                     if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
-                        final var res = loopGetResult(conn);
+                        final var res = loopGetResult(conn, start, queryTimeout);
                         try {
                             final var status = pqx.resultStatus(res);
                             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
@@ -256,33 +262,39 @@ public class AsyncPQCP extends PQCP {
     }
 
     public CompletableFuture<MemorySegment> fetchTextResultAsync(
-            final MemorySegment preparedStatement) {
+            final MemorySegment preparedStatement,
+            final Duration queryTimeout) {
 
-        return fetchAsync(preparedStatement, true);
+        return fetchAsync(preparedStatement, true, queryTimeout);
     }
 
     public CompletableFuture<MemorySegment> prepareThenFetchTextResultAsync(
-            final MemorySegment preparedStatement) {
+            final MemorySegment preparedStatement,
+            final Duration queryTimeout) {
 
-        return prepareThenFetchAsync(preparedStatement, true);
+        return prepareThenFetchAsync(preparedStatement, true, queryTimeout);
     }
 
     public CompletableFuture<MemorySegment> fetchBinaryResultAsync(
-            final MemorySegment preparedStatement) {
+            final MemorySegment preparedStatement,
+            final Duration queryTimeout) {
 
-        return fetchAsync(preparedStatement, false);
+        return fetchAsync(preparedStatement, false, queryTimeout);
     }
 
     public CompletableFuture<MemorySegment> prepareThenFetchBinaryResultAsync(
-            final MemorySegment preparedStatement) {
+            final MemorySegment preparedStatement,
+            final Duration queryTimeout) {
 
-        return prepareThenFetchAsync(preparedStatement, false);
+        return prepareThenFetchAsync(preparedStatement, false, queryTimeout);
     }
 
     private CompletableFuture<MemorySegment> fetchAsync(
             final MemorySegment preparedStatement,
-            final boolean text) {
+            final boolean text,
+            final Duration queryTimeout) {
 
+        final var start = System.nanoTime();
         final var result = new CompletableFuture<MemorySegment>();
         executor.submit(() -> {
             try {
@@ -297,7 +309,7 @@ public class AsyncPQCP extends PQCP {
                                     pqx.sendQueryPreparedBinaryResult(conn, preparedStatement);
 
                     if (sent) {
-                        final var res = loopGetResult(conn);
+                        final var res = loopGetResult(conn, start, queryTimeout);
                         final var status = pqx.resultStatus(res);
                         if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                             // Release as soon as possible.
@@ -326,8 +338,10 @@ public class AsyncPQCP extends PQCP {
 
     private CompletableFuture<MemorySegment> prepareThenFetchAsync(
             final MemorySegment preparedStatement,
-            final boolean text) {
+            final boolean text,
+            final Duration queryTimeout) {
 
+        final var start = System.nanoTime();
         final var result = new CompletableFuture<MemorySegment>();
         executor.submit(() -> {
             try {
@@ -337,14 +351,14 @@ public class AsyncPQCP extends PQCP {
                 var connReleased = false;
 
                 try {
-                    prepareAsync(conn, preparedStatement, stmtName);
+                    prepareAsync(conn, preparedStatement, stmtName, start, queryTimeout);
                     final var sent =
                             text ?
                                     pqx.sendQueryPreparedTextResult(conn, preparedStatement) :
                                     pqx.sendQueryPreparedBinaryResult(conn, preparedStatement);
 
                     if (sent) {
-                        final var res = loopGetResult(conn);
+                        final var res = loopGetResult(conn, start, queryTimeout);
                         final var status = pqx.resultStatus(res);
                         if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                             // Release as soon as possible.
@@ -374,14 +388,16 @@ public class AsyncPQCP extends PQCP {
     private void prepareAsync(
             final MemorySegment conn,
             final MemorySegment preparedStatement,
-            final MemorySegment stmtName) throws Throwable {
+            final MemorySegment stmtName,
+            final long start,
+            final Duration queryTimeout) throws Throwable {
 
         if (pqx.sendDescribePrepared(conn, stmtName)) {
-            var res = loopGetResult(conn);
+            var res = loopGetResult(conn, start, queryTimeout);
             if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
                 // Preparing statement ...
                 if (pqx.sendPrepare(conn, preparedStatement)) {
-                    res = loopGetResult(conn);
+                    res = loopGetResult(conn, start, queryTimeout);
                     if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
                         throw new RuntimeException(pqx.resultErrorMessageString(res));
                     }
@@ -395,11 +411,17 @@ public class AsyncPQCP extends PQCP {
     }
 
     private MemorySegment loopGetResult(
-            final MemorySegment conn) throws Throwable {
+            final MemorySegment conn,
+            final long start,
+            final Duration queryTimeout) throws Throwable {
 
         for (; ; ) {
             if (pqx.consumeInput(conn)) {
                 if (pqx.isBusy(conn)) {
+                    if (System.nanoTime() - start >= queryTimeout.toNanos() && cancel(conn)) {
+                        throw new TimeoutException(String.format("timeout of %d ms occurred while running query", queryTimeout.toMillis()));
+                    }
+
                     Thread.sleep(1);
                 } else {
                     break;
@@ -418,5 +440,19 @@ public class AsyncPQCP extends PQCP {
                 result = call;
             }
         }
+    }
+
+    private boolean cancel(
+            final MemorySegment conn) {
+
+        try {
+            final var cancelPtr = pqx.getCancel(conn);
+            pqx.cancel(cancelPtr);
+            pqx.freeCancel(cancelPtr);
+        } catch (Throwable ex) {
+            return false;
+        }
+
+        return true;
     }
 }
