@@ -53,6 +53,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNECTDB">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public Optional<MemorySegment> connectDB(
             final String connInfo) throws Throwable {
@@ -69,6 +71,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public Optional<MemorySegment> connInfoOptional(
             final MemorySegment conn) throws Throwable {
@@ -83,6 +87,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQPING">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public PGPing ping(
             final String connInfo) throws Throwable {
@@ -94,6 +100,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQDB">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public String dbString(
             final MemorySegment conn) throws Throwable {
@@ -104,6 +112,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQERRORMESSAGE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public String errorMessageString(
             final MemorySegment conn) throws Throwable {
@@ -114,6 +124,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public Optional<Integer> socketOptional(
             final MemorySegment conn) throws Throwable {
@@ -128,6 +140,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment exec(
             final MemorySegment conn,
@@ -140,6 +154,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment prepare(
             final MemorySegment conn,
@@ -158,6 +174,7 @@ public final class PQX extends PQ {
      * @param conn              postgresql database connection
      * @param preparedStatement pointer to an instance of {@link PreparedStatement} struct
      * @return pointer to a postgresql result model in text format
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment execPreparedTextResult(
             final MemorySegment conn,
@@ -178,6 +195,7 @@ public final class PQX extends PQ {
      * @param conn              postgresql database connection
      * @param preparedStatement pointer to an instance of {@link PreparedStatement} struct
      * @return pointer to a postgresql result model in binary format
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment execPreparedBinaryResult(
             final MemorySegment conn,
@@ -194,6 +212,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public String resultErrorMessageString(
             final MemorySegment res) throws Throwable {
@@ -204,6 +224,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNAME">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public Optional<String> fNameOptionalString(
             final MemorySegment res,
@@ -219,6 +241,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNUMBER">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public Optional<Integer> fNumberOptional(
             final MemorySegment res,
@@ -236,6 +260,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCMDTUPLES">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int cmdTuplesInt(
             final MemorySegment res) throws Throwable {
@@ -251,6 +277,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDPREPARE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean sendPrepare(
             final MemorySegment conn,
@@ -269,6 +297,7 @@ public final class PQX extends PQ {
      * @param conn              postgresql database connection
      * @param preparedStatement pointer to an instance of {@link PreparedStatement} struct
      * @return true if submit was successful otherwise false
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean sendQueryPreparedTextResult(
             final MemorySegment conn,
@@ -285,6 +314,8 @@ public final class PQX extends PQ {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQCANCEL">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public void cancel(
             final MemorySegment cancelPtr) throws Throwable {
@@ -304,6 +335,7 @@ public final class PQX extends PQ {
      * @param conn              postgresql database connection
      * @param preparedStatement pointer to an instance of {@link PreparedStatement} struct
      * @return true if submit was successful otherwise false
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean sendQueryPreparedBinaryResult(
             final MemorySegment conn,
