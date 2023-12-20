@@ -146,16 +146,16 @@ public class AsyncPQCP extends PQCP {
         executor.submit(() -> {
             try {
                 final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
-                for (int i = 0; i < maxPoolSize; i++) {
-                    if (locks[i] != null) {
+                for (int i = 0; i < getMaxPoolSize(); i++) {
+                    if (getLocks()[i] != null) {
                         try {
-                            locks[i].acquire();
-                            prepareAsync(connections[i], preparedStatement, stmtName, start, queryTimeout);
+                            getLocks()[i].acquire();
+                            prepareAsync(getConnections()[i], preparedStatement, stmtName, start, queryTimeout);
                         } catch (Throwable th) {
                             result.completeExceptionally(th);
                             break;
                         } finally {
-                            locks[i].release();
+                            getLocks()[i].release();
                         }
                     }
                 }
@@ -178,25 +178,25 @@ public class AsyncPQCP extends PQCP {
         executor.submit(() -> {
             try {
                 final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
-                final var conn = connections[availableIndex];
+                final var conn = getConnections()[availableIndex];
                 var connReleased = false;
 
                 try {
-                    if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
+                    if (getPqx().sendQueryPreparedBinaryResult(conn, preparedStatement)) {
                         final var res = loopGetResult(conn, start, queryTimeout);
                         try {
-                            final var status = pqx.resultStatus(res);
+                            final var status = getPqx().resultStatus(res);
                             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                                 // Release as soon as possible.
-                                locks[availableIndex].release();
+                                getLocks()[availableIndex].release();
                                 connReleased = true;
 
-                                result.complete(pqx.cmdTuplesInt(res));
+                                result.complete(getPqx().cmdTuplesInt(res));
                             } else {
-                                result.completeExceptionally(new RuntimeException(pqx.resultErrorMessageString(res)));
+                                result.completeExceptionally(new RuntimeException(getPqx().resultErrorMessageString(res)));
                             }
                         } finally {
-                            pqx.clear(res);
+                            getPqx().clear(res);
                         }
                     } else {
                         result.completeExceptionally(new RuntimeException("could not submit query"));
@@ -204,7 +204,7 @@ public class AsyncPQCP extends PQCP {
                 } catch (Throwable th) {
                     result.completeExceptionally(th);
                 } finally {
-                    if (!connReleased) locks[availableIndex].release();
+                    if (!connReleased) getLocks()[availableIndex].release();
                 }
             } catch (TimeoutException ex) {
                 result.completeExceptionally(ex);
@@ -224,26 +224,26 @@ public class AsyncPQCP extends PQCP {
             try {
                 final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
                 final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
-                final var conn = connections[availableIndex];
+                final var conn = getConnections()[availableIndex];
                 var connReleased = false;
 
                 try {
                     prepareAsync(conn, preparedStatement, stmtName, start, queryTimeout);
-                    if (pqx.sendQueryPreparedBinaryResult(conn, preparedStatement)) {
+                    if (getPqx().sendQueryPreparedBinaryResult(conn, preparedStatement)) {
                         final var res = loopGetResult(conn, start, queryTimeout);
                         try {
-                            final var status = pqx.resultStatus(res);
+                            final var status = getPqx().resultStatus(res);
                             if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                                 // Release as soon as possible.
-                                locks[availableIndex].release();
+                                getLocks()[availableIndex].release();
                                 connReleased = true;
 
-                                result.complete(pqx.cmdTuplesInt(res));
+                                result.complete(getPqx().cmdTuplesInt(res));
                             } else {
-                                result.completeExceptionally(new RuntimeException(pqx.resultErrorMessageString(res)));
+                                result.completeExceptionally(new RuntimeException(getPqx().resultErrorMessageString(res)));
                             }
                         } finally {
-                            pqx.clear(res);
+                            getPqx().clear(res);
                         }
                     } else {
                         result.completeExceptionally(new RuntimeException("could not submit query"));
@@ -251,7 +251,7 @@ public class AsyncPQCP extends PQCP {
                 } catch (Throwable th) {
                     result.completeExceptionally(th);
                 } finally {
-                    if (!connReleased) locks[availableIndex].release();
+                    if (!connReleased) getLocks()[availableIndex].release();
                 }
             } catch (TimeoutException | RuntimeException ex) {
                 result.completeExceptionally(ex);
@@ -299,26 +299,26 @@ public class AsyncPQCP extends PQCP {
         executor.submit(() -> {
             try {
                 final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
-                final var conn = connections[availableIndex];
+                final var conn = getConnections()[availableIndex];
                 var connReleased = false;
 
                 try {
                     final var sent =
                             text ?
-                                    pqx.sendQueryPreparedTextResult(conn, preparedStatement) :
-                                    pqx.sendQueryPreparedBinaryResult(conn, preparedStatement);
+                                    getPqx().sendQueryPreparedTextResult(conn, preparedStatement) :
+                                    getPqx().sendQueryPreparedBinaryResult(conn, preparedStatement);
 
                     if (sent) {
                         final var res = loopGetResult(conn, start, queryTimeout);
-                        final var status = pqx.resultStatus(res);
+                        final var status = getPqx().resultStatus(res);
                         if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                             // Release as soon as possible.
-                            locks[availableIndex].release();
+                            getLocks()[availableIndex].release();
                             connReleased = true;
 
                             result.complete(res);
                         } else {
-                            result.completeExceptionally(new RuntimeException(pqx.resultErrorMessageString(res)));
+                            result.completeExceptionally(new RuntimeException(getPqx().resultErrorMessageString(res)));
                         }
                     } else {
                         result.completeExceptionally(new RuntimeException("could not submit query"));
@@ -326,7 +326,7 @@ public class AsyncPQCP extends PQCP {
                 } catch (Throwable th) {
                     result.completeExceptionally(th);
                 } finally {
-                    if (!connReleased) locks[availableIndex].release();
+                    if (!connReleased) getLocks()[availableIndex].release();
                 }
             } catch (TimeoutException ex) {
                 result.completeExceptionally(ex);
@@ -347,27 +347,27 @@ public class AsyncPQCP extends PQCP {
             try {
                 final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
                 final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
-                final var conn = connections[availableIndex];
+                final var conn = getConnections()[availableIndex];
                 var connReleased = false;
 
                 try {
                     prepareAsync(conn, preparedStatement, stmtName, start, queryTimeout);
                     final var sent =
                             text ?
-                                    pqx.sendQueryPreparedTextResult(conn, preparedStatement) :
-                                    pqx.sendQueryPreparedBinaryResult(conn, preparedStatement);
+                                    getPqx().sendQueryPreparedTextResult(conn, preparedStatement) :
+                                    getPqx().sendQueryPreparedBinaryResult(conn, preparedStatement);
 
                     if (sent) {
                         final var res = loopGetResult(conn, start, queryTimeout);
-                        final var status = pqx.resultStatus(res);
+                        final var status = getPqx().resultStatus(res);
                         if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
                             // Release as soon as possible.
-                            locks[availableIndex].release();
+                            getLocks()[availableIndex].release();
                             connReleased = true;
 
                             result.complete(res);
                         } else {
-                            result.completeExceptionally(new RuntimeException(pqx.resultErrorMessageString(res)));
+                            result.completeExceptionally(new RuntimeException(getPqx().resultErrorMessageString(res)));
                         }
                     } else {
                         result.completeExceptionally(new RuntimeException("could not submit query"));
@@ -375,7 +375,7 @@ public class AsyncPQCP extends PQCP {
                 } catch (Throwable th) {
                     result.completeExceptionally(th);
                 } finally {
-                    if (!connReleased) locks[availableIndex].release();
+                    if (!connReleased) getLocks()[availableIndex].release();
                 }
             } catch (TimeoutException | RuntimeException ex) {
                 result.completeExceptionally(ex);
@@ -392,14 +392,14 @@ public class AsyncPQCP extends PQCP {
             final long start,
             final Duration queryTimeout) throws Throwable {
 
-        if (pqx.sendDescribePrepared(conn, stmtName)) {
+        if (getPqx().sendDescribePrepared(conn, stmtName)) {
             var res = loopGetResult(conn, start, queryTimeout);
-            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+            if (getPqx().resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
                 // Preparing statement ...
-                if (pqx.sendPrepare(conn, preparedStatement)) {
+                if (getPqx().sendPrepare(conn, preparedStatement)) {
                     res = loopGetResult(conn, start, queryTimeout);
-                    if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-                        throw new RuntimeException(pqx.resultErrorMessageString(res));
+                    if (getPqx().resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+                        throw new RuntimeException(getPqx().resultErrorMessageString(res));
                     }
                 } else {
                     throw new RuntimeException("could not prepare statement");
@@ -416,8 +416,8 @@ public class AsyncPQCP extends PQCP {
             final Duration queryTimeout) throws Throwable {
 
         for (; ; ) {
-            if (pqx.consumeInput(conn)) {
-                if (pqx.isBusy(conn)) {
+            if (getPqx().consumeInput(conn)) {
+                if (getPqx().isBusy(conn)) {
                     if (System.nanoTime() - start >= queryTimeout.toNanos() && cancel(conn)) {
                         throw new TimeoutException(String.format("timeout of %d ms occurred while running query", queryTimeout.toMillis()));
                     }
@@ -427,14 +427,14 @@ public class AsyncPQCP extends PQCP {
                     break;
                 }
             } else {
-                throw new RuntimeException(pqx.errorMessageString(conn));
+                throw new RuntimeException(getPqx().errorMessageString(conn));
             }
         }
 
         MemorySegment call;
         MemorySegment result = null;
         for (; ; ) {
-            if ((call = pqx.getResult(conn)).equals(MemorySegment.NULL)) {
+            if ((call = getPqx().getResult(conn)).equals(MemorySegment.NULL)) {
                 return result;
             } else {
                 result = call;
@@ -446,9 +446,9 @@ public class AsyncPQCP extends PQCP {
             final MemorySegment conn) {
 
         try {
-            final var cancelPtr = pqx.getCancel(conn);
-            pqx.cancel(cancelPtr);
-            pqx.freeCancel(cancelPtr);
+            final var cancelPtr = getPqx().getCancel(conn);
+            getPqx().cancel(cancelPtr);
+            getPqx().freeCancel(cancelPtr);
         } catch (Throwable ex) {
             return false;
         }

@@ -54,18 +54,18 @@ public class PQCP implements Configurable, AutoCloseable {
     private static final Logger logger = Logger.getLogger(PQCP.class.getName());
 
     private final ScheduledExecutorService connectionsStatusCheckerExecutor;
-    protected final int minPoolSize;
-    protected final int maxPoolSize;
+    private final int minPoolSize;
+    private final int maxPoolSize;
     private final AtomicInteger poolSize;
     private final Duration connectTimeout;
     private final AtomicInteger notAvailableConnectionCounter;
     private final int makeNewConnectionCoefficient;
     private final Duration checkConnectionsStatusPeriod;
 
-    protected final PQX pqx;
-    protected final String connInfo;
-    protected final MemorySegment[] connections;
-    protected final Semaphore[] locks;
+    private final PQX pqx;
+    private final String connInfo;
+    private final MemorySegment[] connections;
+    private final Semaphore[] locks;
 
     private final Arena arena;
     private final ArrayList<MemorySegment> preparedStatements;
@@ -928,5 +928,21 @@ public class PQCP implements Configurable, AutoCloseable {
         connectionsStatusCheckerExecutor.shutdown();
         pqx.close();
         arena.close();
+    }
+
+    public int getMaxPoolSize() {
+        return maxPoolSize;
+    }
+
+    public PQX getPqx() {
+        return pqx;
+    }
+
+    public MemorySegment[] getConnections() {
+        return connections;
+    }
+
+    public Semaphore[] getLocks() {
+        return locks;
     }
 }
