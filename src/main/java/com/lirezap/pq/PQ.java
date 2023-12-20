@@ -177,6 +177,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNECTDB">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment connectDB(
             final MemorySegment connInfo) throws Throwable {
@@ -186,6 +188,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQCONNINFO">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment connInfo(
             final MemorySegment conn) throws Throwable {
@@ -195,6 +199,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQFINISH">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public void finish(
             final MemorySegment conn) throws Throwable {
@@ -204,6 +210,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQRESET">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public void reset(
             final MemorySegment conn) throws Throwable {
@@ -213,6 +221,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-PQPING">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public PGPing ping(
             final MemorySegment connInfo) throws Throwable {
@@ -228,6 +238,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-misc.html#LIBPQ-PQCONNINFOFREE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public void connInfoFree(
             final MemorySegment connOptions) throws Throwable {
@@ -237,6 +249,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQDB">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment db(
             final MemorySegment conn) throws Throwable {
@@ -246,6 +260,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSTATUS">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public ConnStatusType status(
             final MemorySegment conn) throws Throwable {
@@ -259,6 +275,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQTRANSACTIONSTATUS">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public PGTransactionStatusType transactionStatus(
             final MemorySegment conn) throws Throwable {
@@ -275,6 +293,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQPROTOCOLVERSION">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int protocolVersion(
             final MemorySegment conn) throws Throwable {
@@ -284,6 +304,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSERVERVERSION">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int serverVersion(
             final MemorySegment conn) throws Throwable {
@@ -293,6 +315,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQERRORMESSAGE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment errorMessage(
             final MemorySegment conn) throws Throwable {
@@ -302,6 +326,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQSOCKET">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int socket(
             final MemorySegment conn) throws Throwable {
@@ -311,6 +337,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQBACKENDPID">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int backendPid(
             final MemorySegment conn) throws Throwable {
@@ -320,6 +348,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQEXEC">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment exec(
             final MemorySegment conn,
@@ -330,6 +360,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQPREPARE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment prepare(
             final MemorySegment conn,
@@ -342,6 +374,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/current/libpq-exec.html#LIBPQ-PQEXECPREPARED">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment execPrepared(
             final MemorySegment conn,
@@ -357,6 +391,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQDESCRIBEPREPARED">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment describePrepared(
             final MemorySegment conn,
@@ -367,6 +403,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTSTATUS">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public ExecStatusType resultStatus(
             final MemorySegment res) throws Throwable {
@@ -390,6 +428,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQRESULTERRORMESSAGE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment resultErrorMessage(
             final MemorySegment res) throws Throwable {
@@ -399,6 +439,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCLEAR">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public void clear(
             final MemorySegment res) throws Throwable {
@@ -408,6 +450,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQNTUPLES">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int nTuples(
             final MemorySegment res) throws Throwable {
@@ -417,6 +461,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQNFIELDS">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int nFields(
             final MemorySegment res) throws Throwable {
@@ -426,6 +472,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNAME">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment fName(
             final MemorySegment res,
@@ -436,6 +484,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFNUMBER">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int fNumber(
             final MemorySegment res,
@@ -446,6 +496,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFFORMAT">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public FieldFormat fFormat(
             final MemorySegment res,
@@ -460,6 +512,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFTYPE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int fType(
             final MemorySegment res,
@@ -470,6 +524,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQFMOD">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int fMod(
             final MemorySegment res,
@@ -480,6 +536,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQGETVALUE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment getValue(
             final MemorySegment res,
@@ -491,6 +549,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQGETISNULL">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean getIsNull(
             final MemorySegment res,
@@ -502,6 +562,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQGETLENGTH">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int getLength(
             final MemorySegment res,
@@ -513,6 +575,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-exec.html#LIBPQ-PQCMDTUPLES">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment cmdTuples(
             final MemorySegment res) throws Throwable {
@@ -522,6 +586,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDQUERY">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean sendQuery(
             final MemorySegment conn,
@@ -532,6 +598,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDPREPARE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean sendPrepare(
             final MemorySegment conn,
@@ -544,6 +612,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDQUERYPREPARED">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean sendQueryPrepared(
             final MemorySegment conn,
@@ -559,6 +629,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQSENDDESCRIBEPREPARED">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean sendDescribePrepared(
             final MemorySegment conn,
@@ -569,6 +641,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQGETRESULT">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment getResult(
             final MemorySegment conn) throws Throwable {
@@ -578,6 +652,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQCONSUMEINPUT">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean consumeInput(
             final MemorySegment conn) throws Throwable {
@@ -587,6 +663,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-async.html#LIBPQ-PQISBUSY">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public boolean isBusy(
             final MemorySegment conn) throws Throwable {
@@ -596,6 +674,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQGETCANCEL">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public MemorySegment getCancel(
             final MemorySegment conn) throws Throwable {
@@ -605,6 +685,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQFREECANCEL">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public void freeCancel(
             final MemorySegment cancelPtr) throws Throwable {
@@ -614,6 +696,8 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
      * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQCANCEL">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
      */
     public int cancel(
             final MemorySegment cancelPtr,
