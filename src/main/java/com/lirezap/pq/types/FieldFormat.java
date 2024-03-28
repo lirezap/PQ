@@ -42,7 +42,9 @@ public enum FieldFormat {
 
     private final int specifier;
 
-    FieldFormat(int specifier) {
+    FieldFormat(
+            final int specifier) {
+
         this.specifier = specifier;
     }
 

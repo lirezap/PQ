@@ -90,7 +90,7 @@ public final class PreparedStatement {
         requireNonNull(arena);
         requireNonNull(preparedStatement);
         requireNonNull(stmtName);
-        PreparedStatement_stmtName_varHandle.set(preparedStatement, arena.allocateUtf8String(stmtName));
+        PreparedStatement_stmtName_varHandle.set(preparedStatement, arena.allocateFrom(stmtName));
     }
 
     public static void setQuery(
@@ -101,7 +101,7 @@ public final class PreparedStatement {
         requireNonNull(arena);
         requireNonNull(preparedStatement);
         requireNonNull(query);
-        PreparedStatement_query_varHandle.set(preparedStatement, arena.allocateUtf8String(query));
+        PreparedStatement_query_varHandle.set(preparedStatement, arena.allocateFrom(query));
     }
 
     public static void setNParams(
@@ -132,33 +132,33 @@ public final class PreparedStatement {
 
         if (previousNParams == 0) {
             // First parameter to be added.
-            final var paramValues = arena.allocateArray(ADDRESS, 1);
-            paramValues.setAtIndex(ADDRESS, 0, value == null ? NULL : arena.allocateUtf8String(value));
+            final var paramValues = arena.allocate(ADDRESS, 1);
+            paramValues.setAtIndex(ADDRESS, 0, value == null ? NULL : arena.allocateFrom(value));
             PreparedStatement_paramValues_varHandle.set(preparedStatement, paramValues);
 
-            final var paramLengths = arena.allocateArray(JAVA_INT, 1);
+            final var paramLengths = arena.allocate(JAVA_INT, 1);
             paramLengths.setAtIndex(JAVA_INT, 0, 0);
             PreparedStatement_paramLengths_varHandle.set(preparedStatement, paramLengths);
 
-            final var paramFormats = arena.allocateArray(JAVA_INT, 1);
+            final var paramFormats = arena.allocate(JAVA_INT, 1);
             paramFormats.setAtIndex(JAVA_INT, 0, FieldFormat.TEXT.getSpecifier());
             PreparedStatement_paramFormats_varHandle.set(preparedStatement, paramFormats);
         } else if (previousNParams >= 1) {
             // previousNParams >= 1
             final var previousParamValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatement);
-            final var newParamValues = arena.allocateArray(ADDRESS, previousNParams + 1);
+            final var newParamValues = arena.allocate(ADDRESS, previousNParams + 1);
             newParamValues.copyFrom(previousParamValues.reinterpret(ADDRESS.byteSize() * (previousNParams + 1)));
-            newParamValues.setAtIndex(ADDRESS, previousNParams, value == null ? NULL : arena.allocateUtf8String(value));
+            newParamValues.setAtIndex(ADDRESS, previousNParams, value == null ? NULL : arena.allocateFrom(value));
             PreparedStatement_paramValues_varHandle.set(preparedStatement, newParamValues);
 
             final var previousParamLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
-            final var newParamLengths = arena.allocateArray(JAVA_INT, previousNParams + 1);
+            final var newParamLengths = arena.allocate(JAVA_INT, previousNParams + 1);
             newParamLengths.copyFrom(previousParamLengths.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
             newParamLengths.setAtIndex(JAVA_INT, previousNParams, 0);
             PreparedStatement_paramLengths_varHandle.set(preparedStatement, newParamLengths);
 
             final var previousParamFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
-            final var newParamFormats = arena.allocateArray(JAVA_INT, previousNParams + 1);
+            final var newParamFormats = arena.allocate(JAVA_INT, previousNParams + 1);
             newParamFormats.copyFrom(previousParamFormats.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
             newParamFormats.setAtIndex(JAVA_INT, previousNParams, FieldFormat.TEXT.getSpecifier());
             PreparedStatement_paramFormats_varHandle.set(preparedStatement, newParamFormats);
@@ -192,33 +192,33 @@ public final class PreparedStatement {
         final var previousNParams = (int) PreparedStatement_nParams_varHandle.getAndAdd(preparedStatement, 1);
         if (previousNParams == 0) {
             // First parameter to be added.
-            final var paramValues = arena.allocateArray(ADDRESS, 1);
+            final var paramValues = arena.allocate(ADDRESS, 1);
             paramValues.setAtIndex(ADDRESS, 0, value);
             PreparedStatement_paramValues_varHandle.set(preparedStatement, paramValues);
 
-            final var paramLengths = arena.allocateArray(JAVA_INT, 1);
+            final var paramLengths = arena.allocate(JAVA_INT, 1);
             paramLengths.setAtIndex(JAVA_INT, 0, (int) value.byteSize());
             PreparedStatement_paramLengths_varHandle.set(preparedStatement, paramLengths);
 
-            final var paramFormats = arena.allocateArray(JAVA_INT, 1);
+            final var paramFormats = arena.allocate(JAVA_INT, 1);
             paramFormats.setAtIndex(JAVA_INT, 0, FieldFormat.BINARY.getSpecifier());
             PreparedStatement_paramFormats_varHandle.set(preparedStatement, paramFormats);
         } else if (previousNParams >= 1) {
             // previousNParams >= 1
             final var previousParamValues = (MemorySegment) PreparedStatement_paramValues_varHandle.get(preparedStatement);
-            final var newParamValues = arena.allocateArray(ADDRESS, previousNParams + 1);
+            final var newParamValues = arena.allocate(ADDRESS, previousNParams + 1);
             newParamValues.copyFrom(previousParamValues.reinterpret(ADDRESS.byteSize() * (previousNParams + 1)));
             newParamValues.setAtIndex(ADDRESS, previousNParams, value.equals(NULL) ? NULL : value);
             PreparedStatement_paramValues_varHandle.set(preparedStatement, newParamValues);
 
             final var previousParamLengths = (MemorySegment) PreparedStatement_paramLengths_varHandle.get(preparedStatement);
-            final var newParamLengths = arena.allocateArray(JAVA_INT, previousNParams + 1);
+            final var newParamLengths = arena.allocate(JAVA_INT, previousNParams + 1);
             newParamLengths.copyFrom(previousParamLengths.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
             newParamLengths.setAtIndex(JAVA_INT, previousNParams, (int) value.byteSize());
             PreparedStatement_paramLengths_varHandle.set(preparedStatement, newParamLengths);
 
             final var previousParamFormats = (MemorySegment) PreparedStatement_paramFormats_varHandle.get(preparedStatement);
-            final var newParamFormats = arena.allocateArray(JAVA_INT, previousNParams + 1);
+            final var newParamFormats = arena.allocate(JAVA_INT, previousNParams + 1);
             newParamFormats.copyFrom(previousParamFormats.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
             newParamFormats.setAtIndex(JAVA_INT, previousNParams, FieldFormat.BINARY.getSpecifier());
             PreparedStatement_paramFormats_varHandle.set(preparedStatement, newParamFormats);
