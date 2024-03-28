@@ -680,8 +680,8 @@ public class PQCP implements Configurable, AutoCloseable {
             final MemorySegment query) throws Throwable {
 
         final var ps = PreparedStatement.create(arena);
-        PreparedStatement.setStmtName(arena, ps, stmtName.reinterpret(CString.strlen(stmtName) + 1).getUtf8String(0));
-        PreparedStatement.setQuery(arena, ps, query.reinterpret(CString.strlen(query) + 1).getUtf8String(0));
+        PreparedStatement.setStmtName(arena, ps, stmtName.reinterpret(CString.strlen(stmtName) + 1).getString(0));
+        PreparedStatement.setQuery(arena, ps, query.reinterpret(CString.strlen(query) + 1).getString(0));
         PreparedStatement.setNParams(ps, (int) PreparedStatement_nParams_varHandle.get(preparedStatement));
         preparedStatements.add(ps);
 
@@ -788,7 +788,7 @@ public class PQCP implements Configurable, AutoCloseable {
                 newLock.acquire();
                 locks[atIndex] = newLock;
                 try (final var arena = Arena.ofConfined()) {
-                    connections[atIndex] = pqx.connectDB(arena.allocateUtf8String(connInfo));
+                    connections[atIndex] = pqx.connectDB(arena.allocateFrom(connInfo));
                 }
 
                 if (pqx.status(connections[atIndex]) != ConnStatusType.CONNECTION_OK) {
@@ -828,7 +828,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final PQCP cp) throws Exception {
 
         final var arena = Arena.ofShared();
-        final var connInfoMemorySegment = arena.allocateUtf8String(cp.connInfo);
+        final var connInfoMemorySegment = arena.allocateFrom(cp.connInfo);
         final var counter = new CountDownLatch(cp.minPoolSize);
         final var connected = new AtomicBoolean(true);
 

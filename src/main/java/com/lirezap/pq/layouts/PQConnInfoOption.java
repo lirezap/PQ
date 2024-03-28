@@ -19,13 +19,12 @@
 
 package com.lirezap.pq.layouts;
 
-import java.lang.foreign.SequenceLayout;
 import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
 
 import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
-import static java.lang.foreign.MemoryLayout.PathElement.sequenceElement;
-import static java.lang.foreign.MemoryLayout.*;
+import static java.lang.foreign.MemoryLayout.paddingLayout;
+import static java.lang.foreign.MemoryLayout.structLayout;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 
@@ -47,12 +46,9 @@ public final class PQConnInfoOption {
             paddingLayout(4)
     ).withName("PQconninfoOption");
 
-    public static final SequenceLayout PQConnInfoOptionSequenceLayout =
-            sequenceLayout(PQConnInfoOptionLayout);
-
     public static final VarHandle PQConnInfoOptionSequence_keyword_varHandle =
-            PQConnInfoOptionSequenceLayout.varHandle(sequenceElement(), groupElement("keyword"));
+            PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("keyword"));
 
     public static final VarHandle PQConnInfoOptionSequence_val_varHandle =
-            PQConnInfoOptionSequenceLayout.varHandle(sequenceElement(), groupElement("val"));
+            PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("val"));
 }

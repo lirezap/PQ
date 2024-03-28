@@ -60,7 +60,7 @@ public final class PQX extends PQ {
             final String connInfo) throws Throwable {
 
         try (final var arena = Arena.ofConfined()) {
-            final var conn = connectDB(arena.allocateUtf8String(connInfo));
+            final var conn = connectDB(arena.allocateFrom(connInfo));
             if (!conn.equals(NULL)) {
                 return Optional.of(conn);
             }
@@ -94,7 +94,7 @@ public final class PQX extends PQ {
             final String connInfo) throws Throwable {
 
         try (final var arena = Arena.ofConfined()) {
-            return ping(arena.allocateUtf8String(connInfo));
+            return ping(arena.allocateFrom(connInfo));
         }
     }
 
@@ -107,7 +107,7 @@ public final class PQX extends PQ {
             final MemorySegment conn) throws Throwable {
 
         final var db = db(conn);
-        return db.reinterpret(CString.strlen(db) + 1).getUtf8String(0);
+        return db.reinterpret(CString.strlen(db) + 1).getString(0);
     }
 
     /**
@@ -119,7 +119,7 @@ public final class PQX extends PQ {
             final MemorySegment conn) throws Throwable {
 
         final var errorMessage = errorMessage(conn);
-        return errorMessage.reinterpret(CString.strlen(errorMessage) + 1).getUtf8String(0);
+        return errorMessage.reinterpret(CString.strlen(errorMessage) + 1).getString(0);
     }
 
     /**
@@ -148,7 +148,7 @@ public final class PQX extends PQ {
             final String command) throws Throwable {
 
         try (final var arena = Arena.ofConfined()) {
-            return exec(conn, arena.allocateUtf8String(command));
+            return exec(conn, arena.allocateFrom(command));
         }
     }
 
@@ -219,7 +219,7 @@ public final class PQX extends PQ {
             final MemorySegment res) throws Throwable {
 
         final var resultErrorMessage = resultErrorMessage(res);
-        return resultErrorMessage.reinterpret(CString.strlen(resultErrorMessage) + 1).getUtf8String(0);
+        return resultErrorMessage.reinterpret(CString.strlen(resultErrorMessage) + 1).getString(0);
     }
 
     /**
@@ -233,7 +233,7 @@ public final class PQX extends PQ {
 
         final var name = fName(res, columnNumber);
         if (!name.equals(NULL)) {
-            return Optional.of(name.reinterpret(CString.strlen(name) + 1).getUtf8String(0));
+            return Optional.of(name.reinterpret(CString.strlen(name) + 1).getString(0));
         }
 
         return Optional.empty();
@@ -249,7 +249,7 @@ public final class PQX extends PQ {
             final String columnName) throws Throwable {
 
         try (final var arena = Arena.ofConfined()) {
-            final var number = fNumber(res, arena.allocateUtf8String(columnName));
+            final var number = fNumber(res, arena.allocateFrom(columnName));
             if (number != -1) {
                 return Optional.of(number);
             }
@@ -267,7 +267,7 @@ public final class PQX extends PQ {
             final MemorySegment res) throws Throwable {
 
         final var cmdTuples = cmdTuples(res);
-        final var countString = cmdTuples.reinterpret(CString.strlen(cmdTuples) + 1).getUtf8String(0);
+        final var countString = cmdTuples.reinterpret(CString.strlen(cmdTuples) + 1).getString(0);
         if (!countString.isBlank()) {
             return Integer.parseInt(countString);
         }
@@ -324,7 +324,7 @@ public final class PQX extends PQ {
             final var errBuf = arena.allocate(256);
             final var result = cancel(cancelPtr, errBuf, 256);
             if (result == 0) {
-                throw new RuntimeException(errBuf.reinterpret(256).getUtf8String(0));
+                throw new RuntimeException(errBuf.reinterpret(256).getString(0));
             }
         }
     }
@@ -369,11 +369,11 @@ public final class PQX extends PQ {
                 final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
 
                 if (!keywordPtr.equals(NULL)) {
-                    if (keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getUtf8String(0).equals(keyword)) {
+                    if (keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getString(0).equals(keyword)) {
                         final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
                         if (!valPtr.equals(NULL)) {
                             // Found keyword and has value.
-                            return Optional.of(valPtr.reinterpret(CString.strlen(valPtr) + 1).getUtf8String(0));
+                            return Optional.of(valPtr.reinterpret(CString.strlen(valPtr) + 1).getString(0));
                         } else {
                             // Found keyword but its value is null.
                             return Optional.empty();
@@ -408,9 +408,9 @@ public final class PQX extends PQ {
                 if (keywordPtr.equals(NULL)) {
                     break;
                 } else {
-                    System.out.print(keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getUtf8String(0) + ": ");
+                    System.out.print(keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getString(0) + ": ");
                     if (!valPtr.equals(NULL)) {
-                        System.out.print(valPtr.reinterpret(CString.strlen(valPtr) + 1).getUtf8String(0));
+                        System.out.print(valPtr.reinterpret(CString.strlen(valPtr) + 1).getString(0));
                     }
 
                     System.out.println();
