@@ -27,6 +27,7 @@ import static java.lang.foreign.MemoryLayout.paddingLayout;
 import static java.lang.foreign.MemoryLayout.structLayout;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
+import static java.lang.invoke.MethodHandles.insertCoordinates;
 
 /**
  * Postgresql C library PQconninfoOption definition as memory layout.
@@ -47,8 +48,8 @@ public final class PQConnInfoOption {
     ).withName("PQconninfoOption");
 
     public static final VarHandle PQConnInfoOptionSequence_keyword_varHandle =
-            PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("keyword"));
+            insertCoordinates(PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("keyword")), 1, 0L);
 
     public static final VarHandle PQConnInfoOptionSequence_val_varHandle =
-            PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("val"));
+            insertCoordinates(PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("val")), 1, 0L);
 }
