@@ -32,6 +32,7 @@ import static java.lang.foreign.MemoryLayout.structLayout;
 import static java.lang.foreign.MemorySegment.NULL;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
+import static java.lang.invoke.MethodHandles.insertCoordinates;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -52,22 +53,22 @@ public final class PreparedStatement {
     );
 
     public static final VarHandle PreparedStatement_stmtName_varHandle =
-            PreparedStatementLayout.varHandle(groupElement("stmtName"));
+            insertCoordinates(PreparedStatementLayout.varHandle(groupElement("stmtName")), 1, 0L);
 
     public static final VarHandle PreparedStatement_query_varHandle =
-            PreparedStatementLayout.varHandle(groupElement("query"));
+            insertCoordinates(PreparedStatementLayout.varHandle(groupElement("query")), 1, 0L);
 
     public static final VarHandle PreparedStatement_nParams_varHandle =
-            PreparedStatementLayout.varHandle(groupElement("nParams"));
+            insertCoordinates(PreparedStatementLayout.varHandle(groupElement("nParams")), 1, 0L);
 
     public static final VarHandle PreparedStatement_paramValues_varHandle =
-            PreparedStatementLayout.varHandle(groupElement("paramValues"));
+            insertCoordinates(PreparedStatementLayout.varHandle(groupElement("paramValues")), 1, 0L);
 
     public static final VarHandle PreparedStatement_paramLengths_varHandle =
-            PreparedStatementLayout.varHandle(groupElement("paramLengths"));
+            insertCoordinates(PreparedStatementLayout.varHandle(groupElement("paramLengths")), 1, 0L);
 
     public static final VarHandle PreparedStatement_paramFormats_varHandle =
-            PreparedStatementLayout.varHandle(groupElement("paramFormats"));
+            insertCoordinates(PreparedStatementLayout.varHandle(groupElement("paramFormats")), 1, 0L);
 
     /**
      * Creates a new prepared statement in provided memory arena with all default values for fields.
