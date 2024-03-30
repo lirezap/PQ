@@ -47,9 +47,9 @@ public final class PQConnInfoOption {
             paddingLayout(4)
     ).withName("PQconninfoOption");
 
-    public static final VarHandle PQConnInfoOptionSequence_keyword_varHandle =
+    public static final VarHandle PQConnInfoOption_keyword_arrayElementVarHandle =
             insertCoordinates(PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("keyword")), 1, 0L);
 
-    public static final VarHandle PQConnInfoOptionSequence_val_varHandle =
+    public static final VarHandle PQConnInfoOption_val_arrayElementVarHandle =
             insertCoordinates(PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("val")), 1, 0L);
 }
