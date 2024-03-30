@@ -366,11 +366,11 @@ public final class PQX extends PQ {
         try {
             for (int i = 0; ; i++) {
                 final var rPtr = ptr.reinterpret(PQConnInfoOptionLayout.byteSize() + PQConnInfoOptionLayout.byteSize() * i);
-                final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
+                final var keywordPtr = (MemorySegment) PQConnInfoOption_keyword_arrayElementVarHandle.get(rPtr, i);
 
                 if (!keywordPtr.equals(NULL)) {
                     if (keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getString(0).equals(keyword)) {
-                        final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
+                        final var valPtr = (MemorySegment) PQConnInfoOption_val_arrayElementVarHandle.get(rPtr, i);
                         if (!valPtr.equals(NULL)) {
                             // Found keyword and has value.
                             return Optional.of(valPtr.reinterpret(CString.strlen(valPtr) + 1).getString(0));
@@ -402,8 +402,8 @@ public final class PQX extends PQ {
         try {
             for (int i = 0; ; i++) {
                 final var rPtr = ptr.reinterpret(PQConnInfoOptionLayout.byteSize() + PQConnInfoOptionLayout.byteSize() * i);
-                final var keywordPtr = (MemorySegment) PQConnInfoOptionSequence_keyword_varHandle.get(rPtr, i);
-                final var valPtr = (MemorySegment) PQConnInfoOptionSequence_val_varHandle.get(rPtr, i);
+                final var keywordPtr = (MemorySegment) PQConnInfoOption_keyword_arrayElementVarHandle.get(rPtr, i);
+                final var valPtr = (MemorySegment) PQConnInfoOption_val_arrayElementVarHandle.get(rPtr, i);
 
                 if (keywordPtr.equals(NULL)) {
                     break;
