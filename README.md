@@ -126,9 +126,3 @@ public final class Application {
     }
 }
 ```
-
-To run the project you must provide `--enable-preview` option, like:
-
-```text
-java -jar --enable-preview target/Application.jar
-```
