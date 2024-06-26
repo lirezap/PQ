@@ -88,7 +88,7 @@ Then add PQ dependency into your maven project:
 <dependency>
     <groupId>com.lirezap</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.46</version>
+    <version>0.0.47</version>
 </dependency>
 ```
 
