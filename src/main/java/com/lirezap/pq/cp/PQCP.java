@@ -19,7 +19,6 @@
 
 package com.lirezap.pq.cp;
 
-import com.lirezap.pq.PQ;
 import com.lirezap.pq.PQX;
 import com.lirezap.pq.cp.xact.AccessMode;
 import com.lirezap.pq.cp.xact.DeferrableMode;
@@ -46,7 +45,7 @@ import java.util.stream.IntStream;
 import static com.lirezap.pq.layouts.PreparedStatement.*;
 
 /**
- * A connection pool implementation using {@link PQ}.
+ * A connection pool implementation using {@link PQX}.
  *
  * @author Alireza Pourtaghi
  */
