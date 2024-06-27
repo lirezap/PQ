@@ -20,7 +20,7 @@
 package com.lirezap.pq.types;
 
 /**
- * Postgresql C library ConnStatusType enum.
+ * Postgresql C library ExecStatusType enum.
  *
  * @author Alireza Pourtaghi
  */
