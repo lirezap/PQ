@@ -14,7 +14,7 @@
 
     <groupId>com.lirezap</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.48</version>
+    <version>0.0.49</version>
     <name>pq</name>
     <description>Native postgresql access using FFM</description>
 
