@@ -18,8 +18,8 @@
  */
 
 /**
- * <h2>Memory layout definitions of postgresql C library or internally used ones</h2>
+ * <h2>Type definitions of postgresql C library or internally used ones</h2>
  *
  * @author Alireza Pourtaghi
  */
-package com.lirezap.pq.layouts;
+package com.lirezap.pq.type;

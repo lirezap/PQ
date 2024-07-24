@@ -98,7 +98,7 @@ Then the library can be used as in:
 package com.lirezap.Application;
 
 import com.lirezap.pq.cp.PQCP;
-import com.lirezap.pq.layouts.PreparedStatement;
+import com.lirezap.pq.layout.PreparedStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,12 +112,12 @@ public final class Application {
         try (final var cp = new PQCP(Path.of("/opt/homebrew/opt/libpq/lib/libpq.dylib"), "postgresql://user:pass@localhost:5432/db");
              final var arena = Arena.ofShared()) {
 
-            final var ps = PreparedStatement.create(arena);
-            PreparedStatement.setStmtName(arena, ps, "insertEvent");
-            PreparedStatement.setQuery(arena, ps, "insert into event (type, metadata, entity_table, ts) values ($1, $2, $3, now());");
-            PreparedStatement.addTextValue(arena, ps, "TYPE"); // for $1
-            PreparedStatement.addTextValue(arena, ps, "Example metadata!"); // for $2
-            PreparedStatement.addTextValue(arena, ps, "event"); // for $3
+            final var ps = new PreparedStatement(arena);
+            ps.setStmtName("insertEvent");
+            ps.setQuery("insert into event (type, metadata, entity_table, ts) values ($1, $2, $3, now());");
+            ps.addTextValue("TYPE"); // for $1
+            ps.addTextValue("Example metadata!"); // for $2
+            ps.addTextValue("event"); // for $3
 
             logger.info("Rows affected: {}", cp.prepareThenExecute(ps));
         } catch (Throwable ex) {

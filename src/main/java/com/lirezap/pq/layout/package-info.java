@@ -17,26 +17,9 @@
  *
  */
 
-package com.lirezap.pq.types;
-
 /**
- * Postgresql C library ConnStatusType enum.
+ * <h2>Memory layout definitions of postgresql C library or internally used ones</h2>
  *
  * @author Alireza Pourtaghi
  */
-public enum ConnStatusType {
-    /**
-     * Connection status ok.
-     */
-    CONNECTION_OK,
-
-    /**
-     * Connection status not ok.
-     */
-    CONNECTION_BAD,
-
-    /**
-     * Connection status unknown.
-     */
-    UNKNOWN
-}
+package com.lirezap.pq.layout;

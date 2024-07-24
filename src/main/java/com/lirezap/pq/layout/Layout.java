@@ -17,41 +17,40 @@
  *
  */
 
-package com.lirezap.pq.types;
+package com.lirezap.pq.layout;
+
+import java.lang.foreign.MemoryLayout;
+import java.lang.invoke.VarHandle;
 
 /**
- * Postgresql C library PGTransactionStatusType enum.
+ * Memory layout accessor abstraction.
  *
  * @author Alireza Pourtaghi
  */
-public enum PGTransactionStatusType {
-    /**
-     * Connection idle.
-     */
-    PQTRANS_IDLE,
+public abstract class Layout {
 
     /**
-     * Command in progress.
+     * Returns underlying {@link MemoryLayout} related to this abstraction.
+     *
+     * @return {@link MemoryLayout} instance
      */
-    PQTRANS_ACTIVE,
+    public abstract MemoryLayout layout();
 
     /**
-     * Idle, within transaction block.
+     * Returns a var handle that points to a field's value of underlying memory layout.
+     *
+     * @param name variable name
+     * @return {@link VarHandle} instance
      */
-    PQTRANS_INTRANS,
+    public abstract VarHandle var(
+            String name);
 
     /**
-     * Idle, within failed transaction.
+     * Returns a var handle that points to an array of values for a specific field of underlying memory layout.
+     *
+     * @param name variable name
+     * @return {@link VarHandle} instance
      */
-    PQTRANS_INERROR,
-
-    /**
-     * Cannot determine status.
-     */
-    PQTRANS_UNKNOWN,
-
-    /**
-     * Transaction status unknown.
-     */
-    UNKNOWN
+    public abstract VarHandle arrayElementVar(
+            String name);
 }

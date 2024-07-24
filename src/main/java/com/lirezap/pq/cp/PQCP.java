@@ -24,11 +24,11 @@ import com.lirezap.pq.cp.xact.AccessMode;
 import com.lirezap.pq.cp.xact.DeferrableMode;
 import com.lirezap.pq.cp.xact.IsolationLevel;
 import com.lirezap.pq.cp.xact.TransactionBlock;
-import com.lirezap.pq.layouts.PreparedStatement;
+import com.lirezap.pq.layout.PreparedStatement;
 import com.lirezap.pq.std.CString;
-import com.lirezap.pq.types.ConnStatusType;
-import com.lirezap.pq.types.ExecStatusType;
-import com.lirezap.pq.types.FieldFormat;
+import com.lirezap.pq.type.ConnStatusType;
+import com.lirezap.pq.type.ExecStatusType;
+import com.lirezap.pq.type.FieldFormat;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -41,8 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
-
-import static com.lirezap.pq.layouts.PreparedStatement.*;
 
 /**
  * A connection pool implementation using {@link PQX}.
@@ -67,7 +65,7 @@ public class PQCP implements Configurable, AutoCloseable {
     private final Semaphore[] locks;
 
     private final Arena arena;
-    private final ArrayList<MemorySegment> preparedStatements;
+    private final ArrayList<PreparedStatement> preparedStatements;
 
     public PQCP(
             final Path path,
@@ -187,10 +185,10 @@ public class PQCP implements Configurable, AutoCloseable {
     }
 
     public void prepare(
-            final MemorySegment preparedStatement) {
+            final PreparedStatement preparedStatement) {
 
-        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
-        final var query = (MemorySegment) PreparedStatement_query_varHandle.get(preparedStatement);
+        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
+        final var query = (MemorySegment) preparedStatement.var("query").get(preparedStatement.getSegment());
         for (int i = 0; i < maxPoolSize; i++) {
             if (locks[i] != null) {
                 try {
@@ -206,7 +204,7 @@ public class PQCP implements Configurable, AutoCloseable {
     }
 
     public int execute(
-            final MemorySegment preparedStatement) throws TimeoutException {
+            final PreparedStatement preparedStatement) throws TimeoutException {
 
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
         final var conn = connections[availableIndex];
@@ -237,7 +235,7 @@ public class PQCP implements Configurable, AutoCloseable {
 
     public int execute(
             final TransactionBlock transactionBlock,
-            final MemorySegment preparedStatement) {
+            final PreparedStatement preparedStatement) {
 
         checkTransactionBlockSafety(transactionBlock);
         try {
@@ -258,9 +256,9 @@ public class PQCP implements Configurable, AutoCloseable {
     }
 
     public int prepareThenExecute(
-            final MemorySegment preparedStatement) throws TimeoutException {
+            final PreparedStatement preparedStatement) throws TimeoutException {
 
-        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
         final var conn = connections[availableIndex];
         var connReleased = false;
@@ -291,10 +289,10 @@ public class PQCP implements Configurable, AutoCloseable {
 
     public int prepareThenExecute(
             final TransactionBlock transactionBlock,
-            final MemorySegment preparedStatement) {
+            final PreparedStatement preparedStatement) {
 
         checkTransactionBlockSafety(transactionBlock);
-        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
 
         try {
             prepare(transactionBlock.getConn(), preparedStatement, stmtName);
@@ -315,53 +313,53 @@ public class PQCP implements Configurable, AutoCloseable {
     }
 
     public MemorySegment fetchTextResult(
-            final MemorySegment preparedStatement) throws TimeoutException {
+            final PreparedStatement preparedStatement) throws TimeoutException {
 
         return fetch(preparedStatement, true);
     }
 
     public MemorySegment fetchTextResult(
             final TransactionBlock transactionBlock,
-            final MemorySegment preparedStatement) {
+            final PreparedStatement preparedStatement) {
 
         return fetch(transactionBlock, preparedStatement, true);
     }
 
     public MemorySegment prepareThenFetchTextResult(
-            final MemorySegment preparedStatement) throws TimeoutException {
+            final PreparedStatement preparedStatement) throws TimeoutException {
 
         return prepareThenFetch(preparedStatement, true);
     }
 
     public MemorySegment prepareThenFetchTextResult(
             final TransactionBlock transactionBlock,
-            final MemorySegment preparedStatement) {
+            final PreparedStatement preparedStatement) {
 
         return prepareThenFetch(transactionBlock, preparedStatement, true);
     }
 
     public MemorySegment fetchBinaryResult(
-            final MemorySegment preparedStatement) throws TimeoutException {
+            final PreparedStatement preparedStatement) throws TimeoutException {
 
         return fetch(preparedStatement, false);
     }
 
     public MemorySegment fetchBinaryResult(
             final TransactionBlock transactionBlock,
-            final MemorySegment preparedStatement) {
+            final PreparedStatement preparedStatement) {
 
         return fetch(transactionBlock, preparedStatement, false);
     }
 
     public MemorySegment prepareThenFetchBinaryResult(
-            final MemorySegment preparedStatement) throws TimeoutException {
+            final PreparedStatement preparedStatement) throws TimeoutException {
 
         return prepareThenFetch(preparedStatement, false);
     }
 
     public MemorySegment prepareThenFetchBinaryResult(
             final TransactionBlock transactionBlock,
-            final MemorySegment preparedStatement) {
+            final PreparedStatement preparedStatement) {
 
         return prepareThenFetch(transactionBlock, preparedStatement, false);
     }
@@ -564,7 +562,7 @@ public class PQCP implements Configurable, AutoCloseable {
     }
 
     private MemorySegment fetch(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final boolean text) throws TimeoutException {
 
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
@@ -595,7 +593,7 @@ public class PQCP implements Configurable, AutoCloseable {
 
     private MemorySegment fetch(
             final TransactionBlock transactionBlock,
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final boolean text) {
 
         checkTransactionBlockSafety(transactionBlock);
@@ -616,10 +614,10 @@ public class PQCP implements Configurable, AutoCloseable {
     }
 
     private MemorySegment prepareThenFetch(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final boolean text) throws TimeoutException {
 
-        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
         final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
         final var conn = connections[availableIndex];
         var connReleased = false;
@@ -649,11 +647,11 @@ public class PQCP implements Configurable, AutoCloseable {
 
     private MemorySegment prepareThenFetch(
             final TransactionBlock transactionBlock,
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final boolean text) {
 
         checkTransactionBlockSafety(transactionBlock);
-        final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
 
         try {
             prepare(transactionBlock.getConn(), preparedStatement, stmtName);
@@ -674,14 +672,14 @@ public class PQCP implements Configurable, AutoCloseable {
 
     private void prepareCached(
             final MemorySegment conn,
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final MemorySegment stmtName,
             final MemorySegment query) throws Throwable {
 
-        final var ps = PreparedStatement.create(arena);
-        PreparedStatement.setStmtName(arena, ps, stmtName.reinterpret(CString.strlen(stmtName) + 1).getString(0));
-        PreparedStatement.setQuery(arena, ps, query.reinterpret(CString.strlen(query) + 1).getString(0));
-        PreparedStatement.setNParams(ps, (int) PreparedStatement_nParams_varHandle.get(preparedStatement));
+        final var ps = new PreparedStatement(arena);
+        ps.setStmtName(stmtName.reinterpret(CString.strlen(stmtName) + 1).getString(0));
+        ps.setQuery(query.reinterpret(CString.strlen(query) + 1).getString(0));
+        ps.setNParams((int) preparedStatement.var("nParams").get(preparedStatement.getSegment()));
         preparedStatements.add(ps);
 
         prepare(conn, preparedStatement, stmtName);
@@ -689,9 +687,9 @@ public class PQCP implements Configurable, AutoCloseable {
 
     private void prepare(
             final MemorySegment conn,
-            final MemorySegment preparedStatement) throws Throwable {
+            final PreparedStatement preparedStatement) throws Throwable {
 
-        var res = pqx.describePrepared(conn, (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement));
+        var res = pqx.describePrepared(conn, (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment()));
         if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
             // Preparing statement ...
             res = pqx.prepare(conn, preparedStatement);
@@ -703,7 +701,7 @@ public class PQCP implements Configurable, AutoCloseable {
 
     private void prepare(
             final MemorySegment conn,
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final MemorySegment stmtName) throws Throwable {
 
         var res = pqx.describePrepared(conn, stmtName);
