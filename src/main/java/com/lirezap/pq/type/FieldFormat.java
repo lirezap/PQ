@@ -17,9 +17,38 @@
  *
  */
 
+package com.lirezap.pq.type;
+
 /**
- * <h2>Type definitions of postgresql C library or internally used ones</h2>
+ * Field (column) data representation format.
  *
  * @author Alireza Pourtaghi
  */
-package com.lirezap.pq.types;
+public enum FieldFormat {
+    /**
+     * Text data representation format.
+     */
+    TEXT(0),
+
+    /**
+     * Binary data representation format.
+     */
+    BINARY(1),
+
+    /**
+     * Unknown data representation format.
+     */
+    UNKNOWN(-1);
+
+    private final int specifier;
+
+    FieldFormat(
+            final int specifier) {
+
+        this.specifier = specifier;
+    }
+
+    public int getSpecifier() {
+        return specifier;
+    }
+}

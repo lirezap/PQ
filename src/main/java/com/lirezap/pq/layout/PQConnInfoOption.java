@@ -17,8 +17,9 @@
  *
  */
 
-package com.lirezap.pq.layouts;
+package com.lirezap.pq.layout;
 
+import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
 
@@ -34,9 +35,13 @@ import static java.lang.invoke.MethodHandles.insertCoordinates;
  *
  * @author Alireza Pourtaghi
  */
-public final class PQConnInfoOption {
+public final class PQConnInfoOption extends Layout {
+    private static final PQConnInfoOption instance = new PQConnInfoOption();
 
-    public static final StructLayout PQConnInfoOptionLayout = structLayout(
+    private PQConnInfoOption() {
+    }
+
+    private static final StructLayout layout = structLayout(
             ADDRESS.withName("keyword"),
             ADDRESS.withName("envvar"),
             ADDRESS.withName("compiled"),
@@ -47,9 +52,38 @@ public final class PQConnInfoOption {
             paddingLayout(4)
     ).withName("PQconninfoOption");
 
-    public static final VarHandle PQConnInfoOption_keyword_arrayElementVarHandle =
-            insertCoordinates(PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("keyword")), 1, 0L);
+    private static final VarHandle keywordArrayElement =
+            insertCoordinates(layout.arrayElementVarHandle(groupElement("keyword")), 1, 0L);
 
-    public static final VarHandle PQConnInfoOption_val_arrayElementVarHandle =
-            insertCoordinates(PQConnInfoOptionLayout.arrayElementVarHandle(groupElement("val")), 1, 0L);
+    private static final VarHandle valArrayElement =
+            insertCoordinates(layout.arrayElementVarHandle(groupElement("val")), 1, 0L);
+
+
+    @Override
+    public MemoryLayout layout() {
+        return layout;
+    }
+
+    @Override
+    public VarHandle var(
+            final String name) {
+
+        throw new IllegalAccessError();
+    }
+
+    @Override
+    public VarHandle arrayElementVar(
+            final String name) {
+
+        return switch (name) {
+            case "keyword" -> keywordArrayElement;
+            case "val" -> valArrayElement;
+
+            default -> throw new IllegalAccessError();
+        };
+    }
+
+    public static PQConnInfoOption instance() {
+        return instance;
+    }
 }

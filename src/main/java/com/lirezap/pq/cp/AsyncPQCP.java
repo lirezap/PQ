@@ -19,7 +19,8 @@
 
 package com.lirezap.pq.cp;
 
-import com.lirezap.pq.types.ExecStatusType;
+import com.lirezap.pq.layout.PreparedStatement;
+import com.lirezap.pq.type.ExecStatusType;
 
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
@@ -27,8 +28,6 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
-
-import static com.lirezap.pq.layouts.PreparedStatement.PreparedStatement_stmtName_varHandle;
 
 /**
  * An asynchronous connection pool implementation based on {@link PQCP}.
@@ -138,14 +137,14 @@ public class AsyncPQCP extends PQCP {
     }
 
     public CompletableFuture<Void> prepareAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final Duration queryTimeout) {
 
         final var start = System.nanoTime();
         final var result = new CompletableFuture<Void>();
         executor.submit(() -> {
             try {
-                final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+                final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
                 for (int i = 0; i < getMaxPoolSize(); i++) {
                     if (getLocks()[i] != null) {
                         try {
@@ -170,7 +169,7 @@ public class AsyncPQCP extends PQCP {
     }
 
     public CompletableFuture<Integer> executeAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final Duration queryTimeout) {
 
         final var start = System.nanoTime();
@@ -215,14 +214,14 @@ public class AsyncPQCP extends PQCP {
     }
 
     public CompletableFuture<Integer> prepareThenExecuteAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final Duration queryTimeout) {
 
         final var start = System.nanoTime();
         final var result = new CompletableFuture<Integer>();
         executor.submit(() -> {
             try {
-                final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+                final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
                 final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
                 final var conn = getConnections()[availableIndex];
                 var connReleased = false;
@@ -262,35 +261,35 @@ public class AsyncPQCP extends PQCP {
     }
 
     public CompletableFuture<MemorySegment> fetchTextResultAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final Duration queryTimeout) {
 
         return fetchAsync(preparedStatement, true, queryTimeout);
     }
 
     public CompletableFuture<MemorySegment> prepareThenFetchTextResultAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final Duration queryTimeout) {
 
         return prepareThenFetchAsync(preparedStatement, true, queryTimeout);
     }
 
     public CompletableFuture<MemorySegment> fetchBinaryResultAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final Duration queryTimeout) {
 
         return fetchAsync(preparedStatement, false, queryTimeout);
     }
 
     public CompletableFuture<MemorySegment> prepareThenFetchBinaryResultAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final Duration queryTimeout) {
 
         return prepareThenFetchAsync(preparedStatement, false, queryTimeout);
     }
 
     private CompletableFuture<MemorySegment> fetchAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final boolean text,
             final Duration queryTimeout) {
 
@@ -337,7 +336,7 @@ public class AsyncPQCP extends PQCP {
     }
 
     private CompletableFuture<MemorySegment> prepareThenFetchAsync(
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final boolean text,
             final Duration queryTimeout) {
 
@@ -345,7 +344,7 @@ public class AsyncPQCP extends PQCP {
         final var result = new CompletableFuture<MemorySegment>();
         executor.submit(() -> {
             try {
-                final var stmtName = (MemorySegment) PreparedStatement_stmtName_varHandle.get(preparedStatement);
+                final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
                 final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
                 final var conn = getConnections()[availableIndex];
                 var connReleased = false;
@@ -387,7 +386,7 @@ public class AsyncPQCP extends PQCP {
 
     private void prepareAsync(
             final MemorySegment conn,
-            final MemorySegment preparedStatement,
+            final PreparedStatement preparedStatement,
             final MemorySegment stmtName,
             final long start,
             final Duration queryTimeout) throws Throwable {

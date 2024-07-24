@@ -17,38 +17,40 @@
  *
  */
 
-package com.lirezap.pq.types;
+package com.lirezap.pq.layout;
+
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+
+import static java.util.Objects.requireNonNull;
 
 /**
- * Field (column) data representation format.
+ * A {@link Layout} that also has close method to free memory after use.
  *
  * @author Alireza Pourtaghi
  */
-public enum FieldFormat {
-    /**
-     * Text data representation format.
-     */
-    TEXT(0),
+public abstract class ClosableLayout extends Layout implements AutoCloseable {
+    private final Arena arena;
+    private final MemorySegment segment;
 
-    /**
-     * Binary data representation format.
-     */
-    BINARY(1),
+    public ClosableLayout(
+            final Arena arena) {
 
-    /**
-     * Unknown data representation format.
-     */
-    UNKNOWN(-1);
-
-    private final int specifier;
-
-    FieldFormat(
-            final int specifier) {
-
-        this.specifier = specifier;
+        requireNonNull(arena);
+        this.arena = arena;
+        this.segment = arena.allocate(layout());
     }
 
-    public int getSpecifier() {
-        return specifier;
+    @Override
+    public final void close() throws Exception {
+        arena.close();
+    }
+
+    public final Arena getArena() {
+        return arena;
+    }
+
+    public final MemorySegment getSegment() {
+        return segment;
     }
 }

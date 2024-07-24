@@ -17,7 +17,7 @@
  *
  */
 
-package com.lirezap.pq.types;
+package com.lirezap.pq.type;
 
 /**
  * Postgresql C library ExecStatusType enum.
