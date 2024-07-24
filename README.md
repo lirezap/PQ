@@ -110,9 +110,8 @@ public final class Application {
 
     public static void main(final String[] args) {
         try (final var cp = new PQCP(Path.of("/opt/homebrew/opt/libpq/lib/libpq.dylib"), "postgresql://user:pass@localhost:5432/db");
-             final var arena = Arena.ofShared()) {
+             final var ps = new PreparedStatement()) {
 
-            final var ps = new PreparedStatement(arena);
             ps.setStmtName("insertEvent");
             ps.setQuery("insert into event (type, metadata, entity_table, ts) values ($1, $2, $3, now());");
             ps.addTextValue("TYPE"); // for $1
