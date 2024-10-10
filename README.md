@@ -1,8 +1,8 @@
 ## Native postgresql access using FFM
 
-PQ is a java library that uses FFM to directly access postgresql. This library is intended to be low level, minimal and
-with the goal of being high performance. Higher level abstractions can be built easily by using these low level
-functions.
+PQ is a java [23+] library that uses FFM to directly access postgresql. This library is intended to be low level,
+minimal and with the goal of being high performance. Higher level abstractions can be built easily by using these low
+level functions.
 
 The main usable connectors are PQ, PQX (PQ extended), PQCP (PQ connection pool) and AsyncPQCP (Asynchronous PQCP). PQ is
 very low level FFM enabled access connector, it has methods equivalent to postgresql C functions. PQX is based on PQ
@@ -88,7 +88,7 @@ Then add PQ dependency into your maven project:
 <dependency>
     <groupId>com.lirezap</groupId>
     <artifactId>pq</artifactId>
-    <version>0.0.49</version>
+    <version>0.0.52</version>
 </dependency>
 ```
 
