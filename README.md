@@ -1,13 +1,13 @@
 ## Native postgresql access using FFM
 
-PQ is a java [23+] library that uses FFM to directly access postgresql. This library is intended to be low level,
-minimal and with the goal of being high performance. Higher level abstractions can be built easily by using these low
-level functions.
+PQ is a java(23+) library that uses FFM to directly access postgresql. This library is intended to be low level, minimal
+and with the goal of being high performance. Higher level abstractions can be built easily by using provided low level
+functions.
 
 The main usable connectors are PQ, PQX (PQ extended), PQCP (PQ connection pool) and AsyncPQCP (Asynchronous PQCP). PQ is
-very low level FFM enabled access connector, it has methods equivalent to postgresql C functions. PQX is based on PQ
-with some extended features. PQCP is a connection pool implementation based on PQX and is probably the most important
-class of this library. AsyncPQCP is the asynchronous version of PQCP that can be used for asynchronous database access.
+a low level FFM enabled access connector, it has methods equivalent to postgresql C functions. PQX is based on PQ with
+some extended features. PQCP is a connection pool implementation based on PQX and is probably the most important class
+of this library. AsyncPQCP is the asynchronous version of PQCP that can be used for asynchronous database access.
 
 ---
 
