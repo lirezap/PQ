@@ -6,7 +6,7 @@ functions.
 
 The main usable connectors are PQ, PQX (PQ extended), PQCP (PQ connection pool) and AsyncPQCP (Asynchronous PQCP). PQ is
 a low level FFM enabled access connector, it has methods equivalent to postgresql C functions. PQX is based on PQ with
-some extended features. PQCP is a connection pool implementation based on PQX and is probably the most important class
+some extended features. PQCP is a connection pool implementation based on PQX and probably is the most important class
 of this library. AsyncPQCP is the asynchronous version of PQCP that can be used for asynchronous database access.
 
 ---

@@ -1,7 +1,7 @@
 /*
  * ISC License
  *
- * Copyright (c) 2023, Alireza Pourtaghi <lirezap@protonmail.com>
+ * Copyright (c) 2024, Alireza Pourtaghi <lirezap@protonmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,17 +22,17 @@
  *
  * <p>
  * PQ is a java library that uses FFM to directly access postgresql. This library is intended to be low level, minimal
- * and with the goal of being high performance. Higher level abstractions can be built easily by using these low level
- * functions.
+ * and with the goal of being high performance. Higher level abstractions can be built easily by using provided low
+ * level functions.
  * </p>
  *
  * <p>
  * The main usable connectors are {@link com.lirezap.pq.PQ}, {@link com.lirezap.pq.PQX} (PQ extended),
  * {@link com.lirezap.pq.cp.PQCP} (PQ connection pool) and {@link com.lirezap.pq.cp.AsyncPQCP} (Asynchronous connection
- * pool). {@link com.lirezap.pq.PQ} is very low level FFM enabled access connector, it has methods equivalent to
- * postgresql C functions. {@link com.lirezap.pq.PQX} is based on {@link com.lirezap.pq.PQ} with some extended features.
- * {@link com.lirezap.pq.cp.PQCP} is a connection pool implementation based on {@link com.lirezap.pq.PQX} and is
- * probably the most important class of this library. {@link com.lirezap.pq.cp.AsyncPQCP} is the asynchronous version of
+ * pool). {@link com.lirezap.pq.PQ} is a low level FFM enabled access connector, it has methods equivalent to postgresql
+ * C functions. {@link com.lirezap.pq.PQX} is based on {@link com.lirezap.pq.PQ} with some extended features.
+ * {@link com.lirezap.pq.cp.PQCP} is a connection pool implementation based on {@link com.lirezap.pq.PQX} and probably
+ * is the most important class of this library. {@link com.lirezap.pq.cp.AsyncPQCP} is the asynchronous version of
  * {@link com.lirezap.pq.cp.PQCP} that can be used for asynchronous database access.
  * </p>
  *
