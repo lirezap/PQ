@@ -1,7 +1,7 @@
 /*
  * ISC License
  *
- * Copyright (c) 2023, Alireza Pourtaghi <lirezap@protonmail.com>
+ * Copyright (c) 2024, Alireza Pourtaghi <lirezap@protonmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,11 +21,18 @@ package com.lirezap.pq;
 
 import com.lirezap.pq.type.*;
 
-import java.lang.foreign.*;
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
 
+import static java.lang.foreign.Arena.ofShared;
+import static java.lang.foreign.FunctionDescriptor.of;
+import static java.lang.foreign.FunctionDescriptor.ofVoid;
+import static java.lang.foreign.Linker.nativeLinker;
 import static java.lang.foreign.MemorySegment.NULL;
+import static java.lang.foreign.SymbolLookup.libraryLookup;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 
@@ -37,24 +44,9 @@ import static java.lang.foreign.ValueLayout.JAVA_INT;
 public sealed class PQ implements AutoCloseable permits PQX {
 
     /**
-     * Shared or dynamic postgresql C library path.
-     */
-    private final Path path;
-
-    /**
      * Memory region that is needed to load library into.
      */
     private final Arena memory;
-
-    /**
-     * Native linker.
-     */
-    private final Linker linker;
-
-    /**
-     * Library symbols; including functions and variables.
-     */
-    private final SymbolLookup lib;
 
     // Database Connection Control Functions
     private final MethodHandle connectDBHandle;
@@ -104,9 +96,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle isBusyHandle;
 
     // Canceling Queries In Progress
-    private final MethodHandle getCancel;
-    private final MethodHandle freeCancel;
-    private final MethodHandle cancel;
+    private final MethodHandle getCancelHandle;
+    private final MethodHandle freeCancelHandle;
+    private final MethodHandle cancelHandle;
 
     /**
      * Creates memory allocator, native linker and library lookup instance to load shared object (or dynamic) postgresql
@@ -117,10 +109,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
     public PQ(
             final Path path) {
 
-        this.path = path;
-        this.memory = Arena.ofShared();
-        this.linker = Linker.nativeLinker();
-        this.lib = SymbolLookup.libraryLookup(path, memory);
+        this.memory = ofShared();
+        final var linker = nativeLinker();
+        final var lib = libraryLookup(path, memory);
 
         // Database Connection Control Functions
         this.connectDBHandle = linker.downcallHandle(lib.find(FUNCTION.PQconnectdb.name()).orElseThrow(), FUNCTION.PQconnectdb.fd);
@@ -170,9 +161,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.isBusyHandle = linker.downcallHandle(lib.find(FUNCTION.PQisBusy.name()).orElseThrow(), FUNCTION.PQisBusy.fd);
 
         // Canceling Queries In Progress
-        this.getCancel = linker.downcallHandle(lib.find(FUNCTION.PQgetCancel.name()).orElseThrow(), FUNCTION.PQgetCancel.fd);
-        this.freeCancel = linker.downcallHandle(lib.find(FUNCTION.PQfreeCancel.name()).orElseThrow(), FUNCTION.PQfreeCancel.fd);
-        this.cancel = linker.downcallHandle(lib.find(FUNCTION.PQcancel.name()).orElseThrow(), FUNCTION.PQcancel.fd);
+        this.getCancelHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetCancel.name()).orElseThrow(), FUNCTION.PQgetCancel.fd);
+        this.freeCancelHandle = linker.downcallHandle(lib.find(FUNCTION.PQfreeCancel.name()).orElseThrow(), FUNCTION.PQfreeCancel.fd);
+        this.cancelHandle = linker.downcallHandle(lib.find(FUNCTION.PQcancel.name()).orElseThrow(), FUNCTION.PQcancel.fd);
     }
 
     /**
@@ -180,7 +171,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment connectDB(
+    public final MemorySegment connectDB(
             final MemorySegment connInfo) throws Throwable {
 
         return (MemorySegment) connectDBHandle.invokeExact(connInfo);
@@ -191,7 +182,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment connInfo(
+    public final MemorySegment connInfo(
             final MemorySegment conn) throws Throwable {
 
         return (MemorySegment) connInfoHandle.invokeExact(conn);
@@ -202,7 +193,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public void finish(
+    public final void finish(
             final MemorySegment conn) throws Throwable {
 
         finishHandle.invokeExact(conn);
@@ -213,7 +204,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public void reset(
+    public final void reset(
             final MemorySegment conn) throws Throwable {
 
         resetHandle.invokeExact(conn);
@@ -224,7 +215,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public PGPing ping(
+    public final PGPing ping(
             final MemorySegment connInfo) throws Throwable {
 
         return switch ((int) pingHandle.invokeExact(connInfo)) {
@@ -241,7 +232,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public void connInfoFree(
+    public final void connInfoFree(
             final MemorySegment connOptions) throws Throwable {
 
         connInfoFreeHandle.invokeExact(connOptions);
@@ -252,7 +243,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment db(
+    public final MemorySegment db(
             final MemorySegment conn) throws Throwable {
 
         return (MemorySegment) dbHandle.invokeExact(conn);
@@ -263,7 +254,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public ConnStatusType status(
+    public final ConnStatusType status(
             final MemorySegment conn) throws Throwable {
 
         return switch ((int) statusHandle.invokeExact(conn)) {
@@ -278,7 +269,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public PGTransactionStatusType transactionStatus(
+    public final PGTransactionStatusType transactionStatus(
             final MemorySegment conn) throws Throwable {
 
         return switch ((int) transactionStatusHandle.invokeExact(conn)) {
@@ -296,7 +287,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int protocolVersion(
+    public final int protocolVersion(
             final MemorySegment conn) throws Throwable {
 
         return (int) protocolVersionHandle.invokeExact(conn);
@@ -307,7 +298,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int serverVersion(
+    public final int serverVersion(
             final MemorySegment conn) throws Throwable {
 
         return (int) serverVersionHandle.invokeExact(conn);
@@ -318,7 +309,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment errorMessage(
+    public final MemorySegment errorMessage(
             final MemorySegment conn) throws Throwable {
 
         return (MemorySegment) errorMessageHandle.invokeExact(conn);
@@ -329,7 +320,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int socket(
+    public final int socket(
             final MemorySegment conn) throws Throwable {
 
         return (int) socketHandle.invokeExact(conn);
@@ -340,7 +331,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int backendPid(
+    public final int backendPid(
             final MemorySegment conn) throws Throwable {
 
         return (int) backendPidHandle.invokeExact(conn);
@@ -351,7 +342,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment exec(
+    public final MemorySegment exec(
             final MemorySegment conn,
             final MemorySegment command) throws Throwable {
 
@@ -363,7 +354,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment prepare(
+    public final MemorySegment prepare(
             final MemorySegment conn,
             final MemorySegment stmtName,
             final MemorySegment query,
@@ -377,7 +368,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment execPrepared(
+    public final MemorySegment execPrepared(
             final MemorySegment conn,
             final MemorySegment stmtName,
             final int nParams,
@@ -394,7 +385,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment describePrepared(
+    public final MemorySegment describePrepared(
             final MemorySegment conn,
             final MemorySegment stmtName) throws Throwable {
 
@@ -406,7 +397,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public ExecStatusType resultStatus(
+    public final ExecStatusType resultStatus(
             final MemorySegment res) throws Throwable {
 
         return switch ((int) resultStatusHandle.invokeExact(res)) {
@@ -431,7 +422,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment resultErrorMessage(
+    public final MemorySegment resultErrorMessage(
             final MemorySegment res) throws Throwable {
 
         return (MemorySegment) resultErrorMessageHandle.invokeExact(res);
@@ -442,7 +433,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public void clear(
+    public final void clear(
             final MemorySegment res) throws Throwable {
 
         clearHandle.invokeExact(res);
@@ -453,7 +444,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int nTuples(
+    public final int nTuples(
             final MemorySegment res) throws Throwable {
 
         return (int) nTuplesHandle.invokeExact(res);
@@ -464,7 +455,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int nFields(
+    public final int nFields(
             final MemorySegment res) throws Throwable {
 
         return (int) nFieldsHandle.invokeExact(res);
@@ -475,7 +466,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment fName(
+    public final MemorySegment fName(
             final MemorySegment res,
             final int columnNumber) throws Throwable {
 
@@ -487,7 +478,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int fNumber(
+    public final int fNumber(
             final MemorySegment res,
             final MemorySegment columnName) throws Throwable {
 
@@ -499,7 +490,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public FieldFormat fFormat(
+    public final FieldFormat fFormat(
             final MemorySegment res,
             final int columnNumber) throws Throwable {
 
@@ -515,7 +506,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int fType(
+    public final int fType(
             final MemorySegment res,
             final int columnNumber) throws Throwable {
 
@@ -527,7 +518,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int fMod(
+    public final int fMod(
             final MemorySegment res,
             final int columnNumber) throws Throwable {
 
@@ -539,7 +530,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment getValue(
+    public final MemorySegment getValue(
             final MemorySegment res,
             final int rowNumber,
             final int columnNumber) throws Throwable {
@@ -552,7 +543,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public boolean getIsNull(
+    public final boolean getIsNull(
             final MemorySegment res,
             final int rowNumber,
             final int columnNumber) throws Throwable {
@@ -565,7 +556,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int getLength(
+    public final int getLength(
             final MemorySegment res,
             final int rowNumber,
             final int columnNumber) throws Throwable {
@@ -578,7 +569,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment cmdTuples(
+    public final MemorySegment cmdTuples(
             final MemorySegment res) throws Throwable {
 
         return (MemorySegment) cmdTuplesHandle.invokeExact(res);
@@ -589,7 +580,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public boolean sendQuery(
+    public final boolean sendQuery(
             final MemorySegment conn,
             final MemorySegment command) throws Throwable {
 
@@ -601,7 +592,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public boolean sendPrepare(
+    public final boolean sendPrepare(
             final MemorySegment conn,
             final MemorySegment stmtName,
             final MemorySegment query,
@@ -615,7 +606,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public boolean sendQueryPrepared(
+    public final boolean sendQueryPrepared(
             final MemorySegment conn,
             final MemorySegment stmtName,
             final int nParams,
@@ -632,7 +623,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public boolean sendDescribePrepared(
+    public final boolean sendDescribePrepared(
             final MemorySegment conn,
             final MemorySegment stmtName) throws Throwable {
 
@@ -644,7 +635,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment getResult(
+    public final MemorySegment getResult(
             final MemorySegment conn) throws Throwable {
 
         return (MemorySegment) getResultHandle.invokeExact(conn);
@@ -655,7 +646,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public boolean consumeInput(
+    public final boolean consumeInput(
             final MemorySegment conn) throws Throwable {
 
         return (int) consumeInputHandle.invokeExact(conn) != 0;
@@ -666,7 +657,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public boolean isBusy(
+    public final boolean isBusy(
             final MemorySegment conn) throws Throwable {
 
         return (int) isBusyHandle.invokeExact(conn) != 0;
@@ -677,10 +668,10 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public MemorySegment getCancel(
+    public final MemorySegment getCancel(
             final MemorySegment conn) throws Throwable {
 
-        return (MemorySegment) getCancel.invokeExact(conn);
+        return (MemorySegment) getCancelHandle.invokeExact(conn);
     }
 
     /**
@@ -688,10 +679,10 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public void freeCancel(
+    public final void freeCancel(
             final MemorySegment cancelPtr) throws Throwable {
 
-        freeCancel.invokeExact(cancelPtr);
+        freeCancelHandle.invokeExact(cancelPtr);
     }
 
     /**
@@ -699,16 +690,16 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public int cancel(
+    public final int cancel(
             final MemorySegment cancelPtr,
             final MemorySegment errBuf,
             final int errBufSize) throws Throwable {
 
-        return (int) cancel.invokeExact(cancelPtr, errBuf, errBufSize);
+        return (int) cancelHandle.invokeExact(cancelPtr, errBuf, errBufSize);
     }
 
     @Override
-    public void close() throws Exception {
+    public final void close() throws Exception {
         memory.close();
     }
 
@@ -720,56 +711,56 @@ public sealed class PQ implements AutoCloseable permits PQX {
      */
     private enum FUNCTION {
         // Database Connection Control Functions
-        PQconnectdb(FunctionDescriptor.of(ADDRESS, ADDRESS)),
-        PQconninfo(FunctionDescriptor.of(ADDRESS, ADDRESS)),
-        PQfinish(FunctionDescriptor.ofVoid(ADDRESS)),
-        PQreset(FunctionDescriptor.ofVoid(ADDRESS)),
-        PQping(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQconninfoFree(FunctionDescriptor.ofVoid(ADDRESS)),
+        PQconnectdb(of(ADDRESS, ADDRESS)),
+        PQconninfo(of(ADDRESS, ADDRESS)),
+        PQfinish(ofVoid(ADDRESS)),
+        PQreset(ofVoid(ADDRESS)),
+        PQping(of(JAVA_INT, ADDRESS)),
+        PQconninfoFree(ofVoid(ADDRESS)),
 
         // Connection Status Functions
-        PQdb(FunctionDescriptor.of(ADDRESS, ADDRESS)),
-        PQstatus(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQtransactionStatus(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQprotocolVersion(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQserverVersion(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQerrorMessage(FunctionDescriptor.of(ADDRESS, ADDRESS)),
-        PQsocket(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQbackendPID(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
+        PQdb(of(ADDRESS, ADDRESS)),
+        PQstatus(of(JAVA_INT, ADDRESS)),
+        PQtransactionStatus(of(JAVA_INT, ADDRESS)),
+        PQprotocolVersion(of(JAVA_INT, ADDRESS)),
+        PQserverVersion(of(JAVA_INT, ADDRESS)),
+        PQerrorMessage(of(ADDRESS, ADDRESS)),
+        PQsocket(of(JAVA_INT, ADDRESS)),
+        PQbackendPID(of(JAVA_INT, ADDRESS)),
 
         // Command Execution Functions
-        PQexec(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS)),
-        PQresultStatus(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQresultErrorMessage(FunctionDescriptor.of(ADDRESS, ADDRESS)),
-        PQprepare(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
-        PQexecPrepared(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
-        PQdescribePrepared(FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS)),
-        PQclear(FunctionDescriptor.ofVoid(ADDRESS)),
-        PQntuples(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQnfields(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQfname(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT)),
-        PQfnumber(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
-        PQfformat(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
-        PQftype(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
-        PQfmod(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)),
-        PQgetvalue(FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT)),
-        PQgetisnull(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
-        PQgetlength(FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
-        PQcmdTuples(FunctionDescriptor.of(ADDRESS, ADDRESS)),
+        PQexec(of(ADDRESS, ADDRESS, ADDRESS)),
+        PQresultStatus(of(JAVA_INT, ADDRESS)),
+        PQresultErrorMessage(of(ADDRESS, ADDRESS)),
+        PQprepare(of(ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
+        PQexecPrepared(of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
+        PQdescribePrepared(of(ADDRESS, ADDRESS, ADDRESS)),
+        PQclear(ofVoid(ADDRESS)),
+        PQntuples(of(JAVA_INT, ADDRESS)),
+        PQnfields(of(JAVA_INT, ADDRESS)),
+        PQfname(of(ADDRESS, ADDRESS, JAVA_INT)),
+        PQfnumber(of(JAVA_INT, ADDRESS, ADDRESS)),
+        PQfformat(of(JAVA_INT, ADDRESS, JAVA_INT)),
+        PQftype(of(JAVA_INT, ADDRESS, JAVA_INT)),
+        PQfmod(of(JAVA_INT, ADDRESS, JAVA_INT)),
+        PQgetvalue(of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT)),
+        PQgetisnull(of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
+        PQgetlength(of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT)),
+        PQcmdTuples(of(ADDRESS, ADDRESS)),
 
         // Asynchronous Command Processing
-        PQsendQuery(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
-        PQsendPrepare(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
-        PQsendQueryPrepared(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
-        PQsendDescribePrepared(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)),
-        PQgetResult(FunctionDescriptor.of(ADDRESS, ADDRESS)),
-        PQconsumeInput(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
-        PQisBusy(FunctionDescriptor.of(JAVA_INT, ADDRESS)),
+        PQsendQuery(of(JAVA_INT, ADDRESS, ADDRESS)),
+        PQsendPrepare(of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
+        PQsendQueryPrepared(of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
+        PQsendDescribePrepared(of(JAVA_INT, ADDRESS, ADDRESS)),
+        PQgetResult(of(ADDRESS, ADDRESS)),
+        PQconsumeInput(of(JAVA_INT, ADDRESS)),
+        PQisBusy(of(JAVA_INT, ADDRESS)),
 
         // Canceling Queries In Progress
-        PQgetCancel(FunctionDescriptor.of(ADDRESS, ADDRESS)),
-        PQfreeCancel(FunctionDescriptor.ofVoid(ADDRESS)),
-        PQcancel(FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT));
+        PQgetCancel(of(ADDRESS, ADDRESS)),
+        PQfreeCancel(ofVoid(ADDRESS)),
+        PQcancel(of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT));
 
         public final FunctionDescriptor fd;
 
