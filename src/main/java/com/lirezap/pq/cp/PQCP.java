@@ -465,7 +465,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final int columnNumber) {
 
         try {
-            return pqx.fNameOptionalString(res, columnNumber);
+            return pqx.fNameOptional(res, columnNumber);
         } catch (Throwable th) {
             throw new RuntimeException(th);
         }

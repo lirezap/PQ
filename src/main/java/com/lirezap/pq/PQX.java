@@ -1,7 +1,7 @@
 /*
  * ISC License
  *
- * Copyright (c) 2023, Alireza Pourtaghi <lirezap@protonmail.com>
+ * Copyright (c) 2024, Alireza Pourtaghi <lirezap@protonmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,8 +21,6 @@ package com.lirezap.pq;
 
 import com.lirezap.pq.layout.PQConnInfoOption;
 import com.lirezap.pq.layout.PreparedStatement;
-import com.lirezap.pq.std.CString;
-import com.lirezap.pq.type.FieldFormat;
 import com.lirezap.pq.type.PGPing;
 
 import java.lang.foreign.Arena;
@@ -30,7 +28,13 @@ import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import static com.lirezap.pq.std.CString.strlen;
+import static com.lirezap.pq.type.FieldFormat.BINARY;
+import static com.lirezap.pq.type.FieldFormat.TEXT;
+import static java.lang.Integer.parseInt;
 import static java.lang.foreign.MemorySegment.NULL;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 
 /**
  * {@link PQ} extended to have some utility methods.
@@ -40,7 +44,7 @@ import static java.lang.foreign.MemorySegment.NULL;
 public final class PQX extends PQ {
 
     /**
-     * Same as {@link PQ} constructor with extended features.
+     * Same as {@link PQ} constructor.
      *
      * @param path shared object (or dynamic) postgresql C library's path
      */
@@ -61,10 +65,10 @@ public final class PQX extends PQ {
         try (final var arena = Arena.ofConfined()) {
             final var conn = connectDB(arena.allocateFrom(connInfo));
             if (!conn.equals(NULL)) {
-                return Optional.of(conn);
+                return of(conn);
             }
 
-            return Optional.empty();
+            return empty();
         }
     }
 
@@ -78,10 +82,10 @@ public final class PQX extends PQ {
 
         final var connInfo = connInfo(conn);
         if (!connInfo.equals(NULL)) {
-            return Optional.of(connInfo);
+            return of(connInfo);
         }
 
-        return Optional.empty();
+        return empty();
     }
 
     /**
@@ -106,7 +110,7 @@ public final class PQX extends PQ {
             final MemorySegment conn) throws Throwable {
 
         final var db = db(conn);
-        return db.reinterpret(CString.strlen(db) + 1).getString(0);
+        return db.reinterpret(strlen(db) + 1).getString(0);
     }
 
     /**
@@ -118,7 +122,7 @@ public final class PQX extends PQ {
             final MemorySegment conn) throws Throwable {
 
         final var errorMessage = errorMessage(conn);
-        return errorMessage.reinterpret(CString.strlen(errorMessage) + 1).getString(0);
+        return errorMessage.reinterpret(strlen(errorMessage) + 1).getString(0);
     }
 
     /**
@@ -131,10 +135,10 @@ public final class PQX extends PQ {
 
         final var socket = socket(conn);
         if (socket > 0) {
-            return Optional.of(socket);
+            return of(socket);
         }
 
-        return Optional.empty();
+        return empty();
     }
 
     /**
@@ -185,7 +189,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) preparedStatement.var("paramLengths").get(preparedStatement.getSegment());
         final var paramFormats = (MemorySegment) preparedStatement.var("paramFormats").get(preparedStatement.getSegment());
 
-        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, FieldFormat.TEXT.getSpecifier());
+        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, TEXT.getSpecifier());
     }
 
     /**
@@ -206,7 +210,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) preparedStatement.var("paramLengths").get(preparedStatement.getSegment());
         final var paramFormats = (MemorySegment) preparedStatement.var("paramFormats").get(preparedStatement.getSegment());
 
-        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, FieldFormat.BINARY.getSpecifier());
+        return execPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, BINARY.getSpecifier());
     }
 
     /**
@@ -218,7 +222,7 @@ public final class PQX extends PQ {
             final MemorySegment res) throws Throwable {
 
         final var resultErrorMessage = resultErrorMessage(res);
-        return resultErrorMessage.reinterpret(CString.strlen(resultErrorMessage) + 1).getString(0);
+        return resultErrorMessage.reinterpret(strlen(resultErrorMessage) + 1).getString(0);
     }
 
     /**
@@ -226,16 +230,16 @@ public final class PQX extends PQ {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public Optional<String> fNameOptionalString(
+    public Optional<String> fNameOptional(
             final MemorySegment res,
             final int columnNumber) throws Throwable {
 
         final var name = fName(res, columnNumber);
         if (!name.equals(NULL)) {
-            return Optional.of(name.reinterpret(CString.strlen(name) + 1).getString(0));
+            return of(name.reinterpret(strlen(name) + 1).getString(0));
         }
 
-        return Optional.empty();
+        return empty();
     }
 
     /**
@@ -250,10 +254,10 @@ public final class PQX extends PQ {
         try (final var arena = Arena.ofConfined()) {
             final var number = fNumber(res, arena.allocateFrom(columnName));
             if (number != -1) {
-                return Optional.of(number);
+                return of(number);
             }
 
-            return Optional.empty();
+            return empty();
         }
     }
 
@@ -266,9 +270,9 @@ public final class PQX extends PQ {
             final MemorySegment res) throws Throwable {
 
         final var cmdTuples = cmdTuples(res);
-        final var countString = cmdTuples.reinterpret(CString.strlen(cmdTuples) + 1).getString(0);
+        final var countString = cmdTuples.reinterpret(strlen(cmdTuples) + 1).getString(0);
         if (!countString.isBlank()) {
-            return Integer.parseInt(countString);
+            return parseInt(countString);
         }
 
         return -1;
@@ -308,24 +312,7 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) preparedStatement.var("paramLengths").get(preparedStatement.getSegment());
         final var paramFormats = (MemorySegment) preparedStatement.var("paramFormats").get(preparedStatement.getSegment());
 
-        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, FieldFormat.TEXT.getSpecifier());
-    }
-
-    /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQCANCEL">See official doc for more information.</a>
-     *
-     * @throws Throwable in case of any error while calling native function
-     */
-    public void cancel(
-            final MemorySegment cancelPtr) throws Throwable {
-
-        try (final var arena = Arena.ofConfined()) {
-            final var errBuf = arena.allocate(256);
-            final var result = cancel(cancelPtr, errBuf, 256);
-            if (result == 0) {
-                throw new RuntimeException(errBuf.reinterpret(256).getString(0));
-            }
-        }
+        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, TEXT.getSpecifier());
     }
 
     /**
@@ -346,7 +333,24 @@ public final class PQX extends PQ {
         final var paramLengths = (MemorySegment) preparedStatement.var("paramLengths").get(preparedStatement.getSegment());
         final var paramFormats = (MemorySegment) preparedStatement.var("paramFormats").get(preparedStatement.getSegment());
 
-        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, FieldFormat.BINARY.getSpecifier());
+        return sendQueryPrepared(conn, stmtName, nParams, paramValues, paramLengths, paramFormats, BINARY.getSpecifier());
+    }
+
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-cancel.html#LIBPQ-PQCANCEL">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
+     */
+    public void cancel(
+            final MemorySegment cancelPtr) throws Throwable {
+
+        try (final var arena = Arena.ofConfined()) {
+            final var errBuf = arena.allocate(256);
+            final var result = cancel(cancelPtr, errBuf, 256);
+            if (result == 0) {
+                throw new RuntimeException(errBuf.reinterpret(256).getString(0));
+            }
+        }
     }
 
     /**
@@ -370,19 +374,19 @@ public final class PQX extends PQ {
 
                 final var keywordPtr = (MemorySegment) PQConnInfoOption.instance().arrayElementVar("keyword").get(rPtr, i);
                 if (!keywordPtr.equals(NULL)) {
-                    if (keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getString(0).equals(keyword)) {
+                    if (keywordPtr.reinterpret(strlen(keywordPtr) + 1).getString(0).equals(keyword)) {
                         final var valPtr = (MemorySegment) PQConnInfoOption.instance().arrayElementVar("val").get(rPtr, i);
                         if (!valPtr.equals(NULL)) {
                             // Found keyword and has value.
-                            return Optional.of(valPtr.reinterpret(CString.strlen(valPtr) + 1).getString(0));
+                            return of(valPtr.reinterpret(strlen(valPtr) + 1).getString(0));
                         } else {
                             // Found keyword but its value is null.
-                            return Optional.empty();
+                            return empty();
                         }
                     }
                 } else {
                     // We are at the end of the array and could not find keyword!
-                    return Optional.empty();
+                    return empty();
                 }
             }
         } finally {
@@ -412,9 +416,9 @@ public final class PQX extends PQ {
                 if (keywordPtr.equals(NULL)) {
                     break;
                 } else {
-                    System.out.print(keywordPtr.reinterpret(CString.strlen(keywordPtr) + 1).getString(0) + ": ");
+                    System.out.print(keywordPtr.reinterpret(strlen(keywordPtr) + 1).getString(0) + ": ");
                     if (!valPtr.equals(NULL)) {
-                        System.out.print(valPtr.reinterpret(CString.strlen(valPtr) + 1).getString(0));
+                        System.out.print(valPtr.reinterpret(strlen(valPtr) + 1).getString(0));
                     }
 
                     System.out.println();
