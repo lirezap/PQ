@@ -1,7 +1,7 @@
 /*
  * ISC License
  *
- * Copyright (c) 2023, Alireza Pourtaghi <lirezap@protonmail.com>
+ * Copyright (c) 2024, Alireza Pourtaghi <lirezap@protonmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,14 +19,14 @@
 
 package com.lirezap.pq.layout;
 
-import com.lirezap.pq.type.FieldFormat;
-
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
 
+import static com.lirezap.pq.type.FieldFormat.BINARY;
+import static com.lirezap.pq.type.FieldFormat.TEXT;
 import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
 import static java.lang.foreign.MemoryLayout.paddingLayout;
 import static java.lang.foreign.MemoryLayout.structLayout;
@@ -120,26 +120,26 @@ public final class PreparedStatement extends ClosableLayout {
             paramLengthsElement.set(getSegment(), paramLengths);
 
             final var paramFormats = getArena().allocate(JAVA_INT, 1);
-            paramFormats.setAtIndex(JAVA_INT, 0, FieldFormat.TEXT.getSpecifier());
+            paramFormats.setAtIndex(JAVA_INT, 0, TEXT.getSpecifier());
             paramFormatsElement.set(getSegment(), paramFormats);
         } else if (previousNParams >= 1) {
             // previousNParams >= 1
             final var previousParamValues = (MemorySegment) paramValuesElement.get(getSegment());
             final var newParamValues = getArena().allocate(ADDRESS, previousNParams + 1);
-            newParamValues.copyFrom(previousParamValues.reinterpret(ADDRESS.byteSize() * (previousNParams + 1)));
+            newParamValues.copyFrom(previousParamValues.reinterpret(ADDRESS.byteSize() * previousNParams));
             newParamValues.setAtIndex(ADDRESS, previousNParams, value == null ? NULL : getArena().allocateFrom(value));
             paramValuesElement.set(getSegment(), newParamValues);
 
             final var previousParamLengths = (MemorySegment) paramLengthsElement.get(getSegment());
             final var newParamLengths = getArena().allocate(JAVA_INT, previousNParams + 1);
-            newParamLengths.copyFrom(previousParamLengths.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
+            newParamLengths.copyFrom(previousParamLengths.reinterpret(JAVA_INT.byteSize() * previousNParams));
             newParamLengths.setAtIndex(JAVA_INT, previousNParams, 0);
             paramLengthsElement.set(getSegment(), newParamLengths);
 
             final var previousParamFormats = (MemorySegment) paramFormatsElement.get(getSegment());
             final var newParamFormats = getArena().allocate(JAVA_INT, previousNParams + 1);
-            newParamFormats.copyFrom(previousParamFormats.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
-            newParamFormats.setAtIndex(JAVA_INT, previousNParams, FieldFormat.TEXT.getSpecifier());
+            newParamFormats.copyFrom(previousParamFormats.reinterpret(JAVA_INT.byteSize() * previousNParams));
+            newParamFormats.setAtIndex(JAVA_INT, previousNParams, TEXT.getSpecifier());
             paramFormatsElement.set(getSegment(), newParamFormats);
         } else {
             throw new RuntimeException("provided pointer to prepared statement is tampered!");
@@ -168,26 +168,26 @@ public final class PreparedStatement extends ClosableLayout {
             paramLengthsElement.set(getSegment(), paramLengths);
 
             final var paramFormats = getArena().allocate(JAVA_INT, 1);
-            paramFormats.setAtIndex(JAVA_INT, 0, FieldFormat.BINARY.getSpecifier());
+            paramFormats.setAtIndex(JAVA_INT, 0, BINARY.getSpecifier());
             paramFormatsElement.set(getSegment(), paramFormats);
         } else if (previousNParams >= 1) {
             // previousNParams >= 1
             final var previousParamValues = (MemorySegment) paramValuesElement.get(getSegment());
             final var newParamValues = getArena().allocate(ADDRESS, previousNParams + 1);
-            newParamValues.copyFrom(previousParamValues.reinterpret(ADDRESS.byteSize() * (previousNParams + 1)));
+            newParamValues.copyFrom(previousParamValues.reinterpret(ADDRESS.byteSize() * previousNParams));
             newParamValues.setAtIndex(ADDRESS, previousNParams, value);
             paramValuesElement.set(getSegment(), newParamValues);
 
             final var previousParamLengths = (MemorySegment) paramLengthsElement.get(getSegment());
             final var newParamLengths = getArena().allocate(JAVA_INT, previousNParams + 1);
-            newParamLengths.copyFrom(previousParamLengths.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
+            newParamLengths.copyFrom(previousParamLengths.reinterpret(JAVA_INT.byteSize() * previousNParams));
             newParamLengths.setAtIndex(JAVA_INT, previousNParams, (int) value.byteSize());
             paramLengthsElement.set(getSegment(), newParamLengths);
 
             final var previousParamFormats = (MemorySegment) paramFormatsElement.get(getSegment());
             final var newParamFormats = getArena().allocate(JAVA_INT, previousNParams + 1);
-            newParamFormats.copyFrom(previousParamFormats.reinterpret(JAVA_INT.byteSize() * (previousNParams + 1)));
-            newParamFormats.setAtIndex(JAVA_INT, previousNParams, FieldFormat.BINARY.getSpecifier());
+            newParamFormats.copyFrom(previousParamFormats.reinterpret(JAVA_INT.byteSize() * previousNParams));
+            newParamFormats.setAtIndex(JAVA_INT, previousNParams, BINARY.getSpecifier());
             paramFormatsElement.set(getSegment(), newParamFormats);
         } else {
             throw new RuntimeException("provided pointer to prepared statement is tampered!");
