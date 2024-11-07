@@ -232,17 +232,6 @@ public sealed class PQ implements AutoCloseable permits PQX {
     }
 
     /**
-     * <a href="https://www.postgresql.org/docs/16/libpq-misc.html#LIBPQ-PQCONNINFOFREE">See official doc for more information.</a>
-     *
-     * @throws Throwable in case of any error while calling native function
-     */
-    public final void connInfoFree(
-            final MemorySegment connOptions) throws Throwable {
-
-        connInfoFreeHandle.invokeExact(connOptions);
-    }
-
-    /**
      * <a href="https://www.postgresql.org/docs/16/libpq-status.html#LIBPQ-PQDB">See official doc for more information.</a>
      *
      * @throws Throwable in case of any error while calling native function
@@ -335,7 +324,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
      *
      * @throws Throwable in case of any error while calling native function
      */
-    public final int backendPid(
+    public final int backendPID(
             final MemorySegment conn) throws Throwable {
 
         return (int) backendPIDHandle.invokeExact(conn);
@@ -702,6 +691,17 @@ public sealed class PQ implements AutoCloseable permits PQX {
         return (int) cancelHandle.invokeExact(cancelPtr, errBuf, errBufSize);
     }
 
+    /**
+     * <a href="https://www.postgresql.org/docs/16/libpq-misc.html#LIBPQ-PQCONNINFOFREE">See official doc for more information.</a>
+     *
+     * @throws Throwable in case of any error while calling native function
+     */
+    public final void connInfoFree(
+            final MemorySegment connOptions) throws Throwable {
+
+        connInfoFreeHandle.invokeExact(connOptions);
+    }
+
     @Override
     public final void close() throws Exception {
         memory.close();
@@ -733,11 +733,11 @@ public sealed class PQ implements AutoCloseable permits PQX {
 
         // Command Execution Functions
         PQexec(of(ADDRESS, ADDRESS, ADDRESS)),
-        PQresultStatus(of(JAVA_INT, ADDRESS)),
-        PQresultErrorMessage(of(ADDRESS, ADDRESS)),
         PQprepare(of(ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)),
         PQexecPrepared(of(ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)),
         PQdescribePrepared(of(ADDRESS, ADDRESS, ADDRESS)),
+        PQresultStatus(of(JAVA_INT, ADDRESS)),
+        PQresultErrorMessage(of(ADDRESS, ADDRESS)),
         PQclear(ofVoid(ADDRESS)),
         PQntuples(of(JAVA_INT, ADDRESS)),
         PQnfields(of(JAVA_INT, ADDRESS)),
