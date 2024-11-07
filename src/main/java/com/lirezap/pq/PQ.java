@@ -54,7 +54,6 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle finishHandle;
     private final MethodHandle resetHandle;
     private final MethodHandle pingHandle;
-    private final MethodHandle connInfoFreeHandle;
 
     // Connection Status Functions
     private final MethodHandle dbHandle;
@@ -64,7 +63,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle serverVersionHandle;
     private final MethodHandle errorMessageHandle;
     private final MethodHandle socketHandle;
-    private final MethodHandle backendPidHandle;
+    private final MethodHandle backendPIDHandle;
 
     // Command Execution Functions
     private final MethodHandle execHandle;
@@ -100,6 +99,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
     private final MethodHandle freeCancelHandle;
     private final MethodHandle cancelHandle;
 
+    // Miscellaneous Functions
+    private final MethodHandle connInfoFreeHandle;
+
     /**
      * Creates memory allocator, native linker and library lookup instance to load shared object (or dynamic) postgresql
      * C library from provided path.
@@ -119,7 +121,6 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.finishHandle = linker.downcallHandle(lib.find(FUNCTION.PQfinish.name()).orElseThrow(), FUNCTION.PQfinish.fd);
         this.resetHandle = linker.downcallHandle(lib.find(FUNCTION.PQreset.name()).orElseThrow(), FUNCTION.PQreset.fd);
         this.pingHandle = linker.downcallHandle(lib.find(FUNCTION.PQping.name()).orElseThrow(), FUNCTION.PQping.fd);
-        this.connInfoFreeHandle = linker.downcallHandle(lib.find(FUNCTION.PQconninfoFree.name()).orElseThrow(), FUNCTION.PQconninfoFree.fd);
 
         // Connection Status Functions
         this.dbHandle = linker.downcallHandle(lib.find(FUNCTION.PQdb.name()).orElseThrow(), FUNCTION.PQdb.fd);
@@ -129,7 +130,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.serverVersionHandle = linker.downcallHandle(lib.find(FUNCTION.PQserverVersion.name()).orElseThrow(), FUNCTION.PQserverVersion.fd);
         this.errorMessageHandle = linker.downcallHandle(lib.find(FUNCTION.PQerrorMessage.name()).orElseThrow(), FUNCTION.PQerrorMessage.fd);
         this.socketHandle = linker.downcallHandle(lib.find(FUNCTION.PQsocket.name()).orElseThrow(), FUNCTION.PQsocket.fd);
-        this.backendPidHandle = linker.downcallHandle(lib.find(FUNCTION.PQbackendPID.name()).orElseThrow(), FUNCTION.PQbackendPID.fd);
+        this.backendPIDHandle = linker.downcallHandle(lib.find(FUNCTION.PQbackendPID.name()).orElseThrow(), FUNCTION.PQbackendPID.fd);
 
         // Command Execution Functions
         this.execHandle = linker.downcallHandle(lib.find(FUNCTION.PQexec.name()).orElseThrow(), FUNCTION.PQexec.fd);
@@ -164,6 +165,9 @@ public sealed class PQ implements AutoCloseable permits PQX {
         this.getCancelHandle = linker.downcallHandle(lib.find(FUNCTION.PQgetCancel.name()).orElseThrow(), FUNCTION.PQgetCancel.fd);
         this.freeCancelHandle = linker.downcallHandle(lib.find(FUNCTION.PQfreeCancel.name()).orElseThrow(), FUNCTION.PQfreeCancel.fd);
         this.cancelHandle = linker.downcallHandle(lib.find(FUNCTION.PQcancel.name()).orElseThrow(), FUNCTION.PQcancel.fd);
+
+        // Miscellaneous Functions
+        this.connInfoFreeHandle = linker.downcallHandle(lib.find(FUNCTION.PQconninfoFree.name()).orElseThrow(), FUNCTION.PQconninfoFree.fd);
     }
 
     /**
@@ -334,7 +338,7 @@ public sealed class PQ implements AutoCloseable permits PQX {
     public final int backendPid(
             final MemorySegment conn) throws Throwable {
 
-        return (int) backendPidHandle.invokeExact(conn);
+        return (int) backendPIDHandle.invokeExact(conn);
     }
 
     /**
@@ -716,7 +720,6 @@ public sealed class PQ implements AutoCloseable permits PQX {
         PQfinish(ofVoid(ADDRESS)),
         PQreset(ofVoid(ADDRESS)),
         PQping(of(JAVA_INT, ADDRESS)),
-        PQconninfoFree(ofVoid(ADDRESS)),
 
         // Connection Status Functions
         PQdb(of(ADDRESS, ADDRESS)),
@@ -760,7 +763,10 @@ public sealed class PQ implements AutoCloseable permits PQX {
         // Canceling Queries In Progress
         PQgetCancel(of(ADDRESS, ADDRESS)),
         PQfreeCancel(ofVoid(ADDRESS)),
-        PQcancel(of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT));
+        PQcancel(of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT)),
+
+        // Miscellaneous Functions
+        PQconninfoFree(ofVoid(ADDRESS));
 
         public final FunctionDescriptor fd;
 
