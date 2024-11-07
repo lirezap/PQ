@@ -1,7 +1,7 @@
 /*
  * ISC License
  *
- * Copyright (c) 2023, Alireza Pourtaghi <lirezap@protonmail.com>
+ * Copyright (c) 2024, Alireza Pourtaghi <lirezap@protonmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -20,11 +20,12 @@
 package com.lirezap.pq.std;
 
 import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.invoke.MethodHandle;
 
+import static java.lang.foreign.FunctionDescriptor.of;
+import static java.lang.foreign.Linker.nativeLinker;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
 
@@ -36,17 +37,12 @@ import static java.lang.foreign.ValueLayout.JAVA_LONG;
 public final class CString {
 
     /**
-     * Native linker.
-     */
-    private static final Linker linker = Linker.nativeLinker();
-
-    /**
      * Library symbols; including functions and variables.
      */
-    private static final SymbolLookup lib = linker.defaultLookup();
+    private static final SymbolLookup lib = nativeLinker().defaultLookup();
 
     private static final MethodHandle strlenHandle =
-            linker.downcallHandle(lib.find(FUNCTION.strlen.name()).orElseThrow(), FUNCTION.strlen.fd);
+            nativeLinker().downcallHandle(lib.find(FUNCTION.strlen.name()).orElseThrow(), FUNCTION.strlen.fd);
 
     public static long strlen(
             final MemorySegment string) throws Throwable {
@@ -60,7 +56,7 @@ public final class CString {
      * @author Alireza Pourtaghi
      */
     private enum FUNCTION {
-        strlen(FunctionDescriptor.of(JAVA_LONG, ADDRESS));
+        strlen(of(JAVA_LONG, ADDRESS));
 
         public final FunctionDescriptor fd;
 
