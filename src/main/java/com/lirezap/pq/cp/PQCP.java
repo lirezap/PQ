@@ -45,7 +45,11 @@ import java.util.logging.Logger;
 
 import static com.lirezap.pq.std.CString.strlen;
 import static java.lang.String.format;
+import static java.lang.System.nanoTime;
+import static java.lang.Thread.sleep;
 import static java.lang.Thread.startVirtualThread;
+import static java.lang.foreign.Arena.ofConfined;
+import static java.lang.foreign.Arena.ofShared;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.IntStream.range;
@@ -181,7 +185,7 @@ public class PQCP implements Configurable, AutoCloseable {
         this.connections = new MemorySegment[this.maxPoolSize];
         this.locks = new Semaphore[this.maxPoolSize];
 
-        this.arena = Arena.ofShared();
+        this.arena = ofShared();
         this.preparedStatements = new ArrayList<>();
 
         if (!connect(this)) {
@@ -249,7 +253,7 @@ public class PQCP implements Configurable, AutoCloseable {
     public int execute(
             final PreparedStatement preparedStatement) throws TimeoutException {
 
-        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
         final var conn = connections[availableIndex];
         var connReleased = false;
 
@@ -302,7 +306,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final PreparedStatement preparedStatement) throws TimeoutException {
 
         final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
-        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
         final var conn = connections[availableIndex];
         var connReleased = false;
 
@@ -417,7 +421,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final DeferrableMode deferrableMode) throws TimeoutException {
 
         final var query = beginQuery(isolationLevel, accessMode, deferrableMode);
-        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
         try {
             final var res = pqx.exec(connections[availableIndex], query);
             final var status = pqx.resultStatus(res);
@@ -608,7 +612,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final PreparedStatement preparedStatement,
             final boolean text) throws TimeoutException {
 
-        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
         final var conn = connections[availableIndex];
         var connReleased = false;
 
@@ -661,7 +665,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final boolean text) throws TimeoutException {
 
         final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
-        final var availableIndex = getAvailableConnectionIndexLocked(true, System.nanoTime(), 1);
+        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
         final var conn = connections[availableIndex];
         var connReleased = false;
 
@@ -758,7 +762,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final long start,
             int tryCount) throws TimeoutException {
 
-        if (System.nanoTime() - start >= connectTimeout.toNanos()) {
+        if (nanoTime() - start >= connectTimeout.toNanos()) {
             throw new TimeoutException(format("timeout of %d ms occurred while getting connection from pool", connectTimeout.toMillis()));
         }
 
@@ -776,11 +780,11 @@ public class PQCP implements Configurable, AutoCloseable {
 
                 // If not reached end of connections array size.
                 if (!poolSize.compareAndSet(maxPoolSize, maxPoolSize)) {
-                    startVirtualThread(() -> makeNewConnection(poolSize.getAndIncrement()));
+                    startVirtualThread(() -> createNewConnection(poolSize.getAndIncrement()));
                 }
             }
 
-            if (tryCount % maxPoolSize == 0) Thread.sleep(1);
+            if (tryCount % maxPoolSize == 0) sleep(1);
         } catch (Exception ex) {
             // Do nothing!
         }
@@ -789,7 +793,7 @@ public class PQCP implements Configurable, AutoCloseable {
         return getAvailableConnectionIndexLocked(false, start, tryCount + 1);
     }
 
-    private synchronized void makeNewConnection(
+    private synchronized void createNewConnection(
             final int atIndex) {
 
         if (atIndex < maxPoolSize && locks[atIndex] == null) {
@@ -797,7 +801,7 @@ public class PQCP implements Configurable, AutoCloseable {
                 final var newLock = new Semaphore(1);
                 newLock.acquire();
                 locks[atIndex] = newLock;
-                try (final var arena = Arena.ofConfined()) {
+                try (final var arena = ofConfined()) {
                     connections[atIndex] = pqx.connectDB(arena.allocateFrom(connInfo));
                 }
 
@@ -837,7 +841,7 @@ public class PQCP implements Configurable, AutoCloseable {
     private static boolean connect(
             final PQCP cp) throws Exception {
 
-        final var arena = Arena.ofShared();
+        final var arena = ofShared();
         final var connInfoMemorySegment = arena.allocateFrom(cp.connInfo);
         final var counter = new CountDownLatch(cp.minPoolSize);
         final var connected = new AtomicBoolean(true);
