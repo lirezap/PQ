@@ -25,7 +25,6 @@ import com.lirezap.pq.cp.xact.DeferrableMode;
 import com.lirezap.pq.cp.xact.IsolationLevel;
 import com.lirezap.pq.cp.xact.TransactionBlock;
 import com.lirezap.pq.layout.PreparedStatement;
-import com.lirezap.pq.std.CString;
 import com.lirezap.pq.type.ConnStatusType;
 import com.lirezap.pq.type.ExecStatusType;
 import com.lirezap.pq.type.FieldFormat;
@@ -36,11 +35,20 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
-import java.util.stream.IntStream;
+
+import static com.lirezap.pq.std.CString.strlen;
+import static java.lang.String.format;
+import static java.lang.Thread.startVirtualThread;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.IntStream.range;
 
 /**
  * A connection pool implementation using {@link PQX}.
@@ -159,7 +167,7 @@ public class PQCP implements Configurable, AutoCloseable {
             throw new IllegalArgumentException("makeNewConnectionCoefficient is negative");
         }
 
-        this.connectionsStatusCheckerExecutor = Executors.newSingleThreadScheduledExecutor();
+        this.connectionsStatusCheckerExecutor = newSingleThreadScheduledExecutor();
         this.minPoolSize = minPoolSize > 0 ? minPoolSize : DEFAULT_MIN_POOL_SIZE;
         this.maxPoolSize = maxPoolSize > 0 ? maxPoolSize : DEFAULT_MAX_POOL_SIZE;
         this.poolSize = new AtomicInteger(minPoolSize);
@@ -193,12 +201,47 @@ public class PQCP implements Configurable, AutoCloseable {
             if (locks[i] != null) {
                 try {
                     locks[i].acquire();
-                    prepareCached(connections[i], preparedStatement, stmtName, query);
+                    try {
+                        prepareCached(connections[i], preparedStatement, stmtName, query, i == 0);
+                    } finally {
+                        locks[i].release();
+                    }
                 } catch (Throwable th) {
                     throw new RuntimeException(th);
-                } finally {
-                    locks[i].release();
                 }
+            }
+        }
+    }
+
+    private void prepareCached(
+            final MemorySegment conn,
+            final PreparedStatement preparedStatement,
+            final MemorySegment stmtName,
+            final MemorySegment query,
+            final boolean cache) throws Throwable {
+
+        if (cache) {
+            final var ps = new PreparedStatement(arena);
+            ps.setStmtName(stmtName.reinterpret(strlen(stmtName) + 1).getString(0));
+            ps.setQuery(query.reinterpret(strlen(query) + 1).getString(0));
+            ps.setNParams((int) preparedStatement.var("nParams").get(preparedStatement.getSegment()));
+            preparedStatements.add(ps);
+        }
+
+        prepare(conn, preparedStatement, stmtName);
+    }
+
+    private void prepare(
+            final MemorySegment conn,
+            final PreparedStatement preparedStatement,
+            final MemorySegment stmtName) throws Throwable {
+
+        var res = pqx.describePrepared(conn, stmtName);
+        if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+            // Preparing statement ...
+            res = pqx.prepare(conn, preparedStatement);
+            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
             }
         }
     }
@@ -382,7 +425,7 @@ public class PQCP implements Configurable, AutoCloseable {
             if (status == ExecStatusType.PGRES_COMMAND_OK) {
                 return new TransactionBlock(availableIndex, connections[availableIndex]);
             } else {
-                throw new RuntimeException(String.format("status returned by database server was %s", status));
+                throw new RuntimeException(format("status returned by database server was %s", status));
             }
         } catch (Throwable th) {
             locks[availableIndex].release();
@@ -399,7 +442,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final var status = pqx.resultStatus(res);
 
             if (status != ExecStatusType.PGRES_COMMAND_OK) {
-                throw new RuntimeException(String.format("status returned by database server was %s", status));
+                throw new RuntimeException(format("status returned by database server was %s", status));
             }
         } catch (Throwable th) {
             throw new RuntimeException(th);
@@ -419,7 +462,7 @@ public class PQCP implements Configurable, AutoCloseable {
             final var status = pqx.resultStatus(res);
 
             if (status != ExecStatusType.PGRES_COMMAND_OK) {
-                throw new RuntimeException(String.format("status returned by database server was %s", status));
+                throw new RuntimeException(format("status returned by database server was %s", status));
             }
         } catch (Throwable th) {
             throw new RuntimeException(th);
@@ -670,21 +713,6 @@ public class PQCP implements Configurable, AutoCloseable {
         }
     }
 
-    private void prepareCached(
-            final MemorySegment conn,
-            final PreparedStatement preparedStatement,
-            final MemorySegment stmtName,
-            final MemorySegment query) throws Throwable {
-
-        final var ps = new PreparedStatement(arena);
-        ps.setStmtName(stmtName.reinterpret(CString.strlen(stmtName) + 1).getString(0));
-        ps.setQuery(query.reinterpret(CString.strlen(query) + 1).getString(0));
-        ps.setNParams((int) preparedStatement.var("nParams").get(preparedStatement.getSegment()));
-        preparedStatements.add(ps);
-
-        prepare(conn, preparedStatement, stmtName);
-    }
-
     private void prepare(
             final MemorySegment conn,
             final PreparedStatement preparedStatement) throws Throwable {
@@ -699,30 +727,15 @@ public class PQCP implements Configurable, AutoCloseable {
         }
     }
 
-    private void prepare(
-            final MemorySegment conn,
-            final PreparedStatement preparedStatement,
-            final MemorySegment stmtName) throws Throwable {
-
-        var res = pqx.describePrepared(conn, stmtName);
-        if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-            // Preparing statement ...
-            res = pqx.prepare(conn, preparedStatement);
-            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-                throw new RuntimeException(pqx.resultErrorMessageString(res));
-            }
-        }
-    }
-
     private String beginQuery(
             final IsolationLevel isolationLevel,
             final AccessMode accessMode,
             final DeferrableMode deferrableMode) {
 
-        var query = String.format("BEGIN%s%s%s;",
-                isolationLevel != IsolationLevel.NONE ? String.format(" %s,", isolationLevel.getValue()) : "",
-                accessMode != AccessMode.NONE ? String.format(" %s,", accessMode.getValue()) : "",
-                deferrableMode != DeferrableMode.NONE ? String.format(" %s", deferrableMode.getValue()) : "");
+        var query = format("BEGIN%s%s%s;",
+                isolationLevel != IsolationLevel.NONE ? format(" %s,", isolationLevel.getValue()) : "",
+                accessMode != AccessMode.NONE ? format(" %s,", accessMode.getValue()) : "",
+                deferrableMode != DeferrableMode.NONE ? format(" %s", deferrableMode.getValue()) : "");
 
         if (query.charAt(query.length() - 2) == ',') {
             query = query.substring(0, query.length() - 2);
@@ -746,7 +759,7 @@ public class PQCP implements Configurable, AutoCloseable {
             int tryCount) throws TimeoutException {
 
         if (System.nanoTime() - start >= connectTimeout.toNanos()) {
-            throw new TimeoutException(String.format("timeout of %d ms occurred while getting connection from pool", connectTimeout.toMillis()));
+            throw new TimeoutException(format("timeout of %d ms occurred while getting connection from pool", connectTimeout.toMillis()));
         }
 
         try {
@@ -763,7 +776,7 @@ public class PQCP implements Configurable, AutoCloseable {
 
                 // If not reached end of connections array size.
                 if (!poolSize.compareAndSet(maxPoolSize, maxPoolSize)) {
-                    Thread.startVirtualThread(() -> makeNewConnection(poolSize.getAndIncrement()));
+                    startVirtualThread(() -> makeNewConnection(poolSize.getAndIncrement()));
                 }
             }
 
@@ -807,7 +820,7 @@ public class PQCP implements Configurable, AutoCloseable {
                     }
                 });
 
-                logger.info(String.format("extended pool size to have %d connections to handle more queries", atIndex + 1));
+                logger.info(format("extended pool size to have %d connections to handle more queries", atIndex + 1));
             } catch (Throwable th) {
                 // Releasing ...
                 // We reach this section only in case of exception at pqx.connectDB(arena.allocateUtf8String(connInfo)).
@@ -829,7 +842,7 @@ public class PQCP implements Configurable, AutoCloseable {
         final var counter = new CountDownLatch(cp.minPoolSize);
         final var connected = new AtomicBoolean(true);
 
-        IntStream.range(0, cp.minPoolSize).forEach(i -> Thread.startVirtualThread(() -> {
+        range(0, cp.minPoolSize).forEach(i -> startVirtualThread(() -> {
             // To not continue making new connections when connected is false.
             // If connected is true, set it to true and execute if block; otherwise don't execute if block.
             if (connected.compareAndSet(true, true)) {
@@ -863,7 +876,7 @@ public class PQCP implements Configurable, AutoCloseable {
 
         try {
             cp.locks[0].acquire();
-            logger.info(String.format(
+            logger.info(format(
                     "connected to postgresql server: [server version: %d, protocol version: %d, db: %s]",
                     cp.pqx.serverVersion(cp.connections[0]),
                     cp.pqx.protocolVersion(cp.connections[0]),
@@ -879,36 +892,36 @@ public class PQCP implements Configurable, AutoCloseable {
             final PQCP cp) {
 
         cp.connectionsStatusCheckerExecutor.scheduleAtFixedRate(
-                () -> checkConnectionsStatus(cp),
-                0L,
-                cp.checkConnectionsStatusPeriod.toMillis(),
-                TimeUnit.MILLISECONDS);
+                () -> checkConnectionsStatus(cp), 0L, cp.checkConnectionsStatusPeriod.toMillis(), MILLISECONDS);
     }
 
     private static void checkConnectionsStatus(
             final PQCP cp) {
 
-        for (int i = 0; i < cp.maxPoolSize; i++) {
-            if (cp.connections[i] != null) {
+        for (int conn = 0; conn < cp.maxPoolSize; conn++) {
+            if (cp.connections[conn] != null) {
                 try {
-                    if (cp.pqx.status(cp.connections[i]) == ConnStatusType.CONNECTION_BAD) {
+                    if (cp.pqx.status(cp.connections[conn]) == ConnStatusType.CONNECTION_BAD) {
                         logger.info("going to reset a bad connection ...");
 
                         // Blocks checkConnectionsStatusPeriod time for a connection to be available for resetting.
-                        if (cp.locks[i].tryAcquire(cp.checkConnectionsStatusPeriod.toMillis(), TimeUnit.MILLISECONDS)) {
-                            cp.pqx.reset(cp.connections[i]);
-                            cp.locks[i].release();
+                        if (cp.locks[conn].tryAcquire(cp.checkConnectionsStatusPeriod.toMillis(), MILLISECONDS)) {
+                            try {
+                                cp.pqx.reset(cp.connections[conn]);
+                            } finally {
+                                cp.locks[conn].release();
+                            }
                         }
                     }
                 } catch (Throwable th) {
-                    logger.warning(String.format("could not check connections status: %s", th.getMessage()));
+                    logger.warning(format("could not check connections status: %s", th.getMessage()));
                 }
             }
         }
     }
 
     @Override
-    public void close() throws Exception {
+    public final void close() throws Exception {
         for (int conn = 0; conn < maxPoolSize; conn++) {
             if (connections[conn] != null) {
                 try {
@@ -927,19 +940,19 @@ public class PQCP implements Configurable, AutoCloseable {
         arena.close();
     }
 
-    public int getMaxPoolSize() {
+    public final int getMaxPoolSize() {
         return maxPoolSize;
     }
 
-    public PQX getPqx() {
+    public final PQX getPqx() {
         return pqx;
     }
 
-    public MemorySegment[] getConnections() {
+    public final MemorySegment[] getConnections() {
         return connections;
     }
 
-    public Semaphore[] getLocks() {
+    public final Semaphore[] getLocks() {
         return locks;
     }
 }
