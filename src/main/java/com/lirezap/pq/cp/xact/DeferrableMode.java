@@ -50,7 +50,7 @@ public enum DeferrableMode {
         this.value = value;
     }
 
-    public String getValue() {
+    public final String getValue() {
         return value;
     }
 }

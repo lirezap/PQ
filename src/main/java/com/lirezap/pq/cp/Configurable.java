@@ -21,6 +21,8 @@ package com.lirezap.pq.cp;
 
 import java.time.Duration;
 
+import static java.time.Duration.ofSeconds;
+
 /**
  * Connection pool related default configuration values.
  *
@@ -29,7 +31,7 @@ import java.time.Duration;
 interface Configurable {
     int DEFAULT_MIN_POOL_SIZE = 10;
     int DEFAULT_MAX_POOL_SIZE = 25;
-    Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    Duration DEFAULT_CONNECT_TIMEOUT = ofSeconds(5);
     int DEFAULT_MAKE_NEW_CONNECTION_COEFFICIENT = 10;
-    Duration DEFAULT_CHECK_CONNECTIONS_STATUS_PERIOD = Duration.ofSeconds(5);
+    Duration DEFAULT_CHECK_CONNECTIONS_STATUS_PERIOD = ofSeconds(5);
 }
