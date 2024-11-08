@@ -280,28 +280,6 @@ public class PQCP implements Configurable, AutoCloseable {
         }
     }
 
-    public int execute(
-            final TransactionBlock transactionBlock,
-            final PreparedStatement preparedStatement) {
-
-        checkTransactionBlockSafety(transactionBlock);
-        try {
-            final var res = pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
-            try {
-                final var status = pqx.resultStatus(res);
-                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
-                    return pqx.cmdTuplesInt(res);
-                } else {
-                    throw new RuntimeException(pqx.resultErrorMessageString(res));
-                }
-            } finally {
-                pqx.clear(res);
-            }
-        } catch (Throwable th) {
-            throw new RuntimeException(th);
-        }
-    }
-
     public int prepareThenExecute(
             final PreparedStatement preparedStatement) throws TimeoutException {
 
@@ -331,6 +309,36 @@ public class PQCP implements Configurable, AutoCloseable {
             throw new RuntimeException(th);
         } finally {
             if (!connReleased) locks[availableIndex].release();
+        }
+    }
+
+    public int execute(
+            final TransactionBlock transactionBlock,
+            final PreparedStatement preparedStatement) {
+
+        checkTransactionBlockSafety(transactionBlock);
+        try {
+            final var res = pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
+            try {
+                final var status = pqx.resultStatus(res);
+                if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                    return pqx.cmdTuplesInt(res);
+                } else {
+                    throw new RuntimeException(pqx.resultErrorMessageString(res));
+                }
+            } finally {
+                pqx.clear(res);
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    private void checkTransactionBlockSafety(
+            final TransactionBlock transactionBlock) {
+
+        if (transactionBlock.getDone().compareAndSet(true, true)) {
+            throw new RuntimeException("transaction done: previously committed or rolled back");
         }
     }
 
@@ -365,17 +373,17 @@ public class PQCP implements Configurable, AutoCloseable {
         return fetch(preparedStatement, true);
     }
 
+    public MemorySegment prepareThenFetchTextResult(
+            final PreparedStatement preparedStatement) throws TimeoutException {
+
+        return prepareThenFetch(preparedStatement, true);
+    }
+
     public MemorySegment fetchTextResult(
             final TransactionBlock transactionBlock,
             final PreparedStatement preparedStatement) {
 
         return fetch(transactionBlock, preparedStatement, true);
-    }
-
-    public MemorySegment prepareThenFetchTextResult(
-            final PreparedStatement preparedStatement) throws TimeoutException {
-
-        return prepareThenFetch(preparedStatement, true);
     }
 
     public MemorySegment prepareThenFetchTextResult(
@@ -391,6 +399,12 @@ public class PQCP implements Configurable, AutoCloseable {
         return fetch(preparedStatement, false);
     }
 
+    public MemorySegment prepareThenFetchBinaryResult(
+            final PreparedStatement preparedStatement) throws TimeoutException {
+
+        return prepareThenFetch(preparedStatement, false);
+    }
+
     public MemorySegment fetchBinaryResult(
             final TransactionBlock transactionBlock,
             final PreparedStatement preparedStatement) {
@@ -399,16 +413,119 @@ public class PQCP implements Configurable, AutoCloseable {
     }
 
     public MemorySegment prepareThenFetchBinaryResult(
-            final PreparedStatement preparedStatement) throws TimeoutException {
-
-        return prepareThenFetch(preparedStatement, false);
-    }
-
-    public MemorySegment prepareThenFetchBinaryResult(
             final TransactionBlock transactionBlock,
             final PreparedStatement preparedStatement) {
 
         return prepareThenFetch(transactionBlock, preparedStatement, false);
+    }
+
+    private MemorySegment fetch(
+            final PreparedStatement preparedStatement,
+            final boolean text) throws TimeoutException {
+
+        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
+        final var conn = connections[availableIndex];
+        var connReleased = false;
+
+        try {
+            final var res = text ?
+                    pqx.execPreparedTextResult(conn, preparedStatement) :
+                    pqx.execPreparedBinaryResult(conn, preparedStatement);
+
+            final var status = pqx.resultStatus(res);
+            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                // Release as soon as possible.
+                locks[availableIndex].release();
+                connReleased = true;
+
+                return res;
+            } else {
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        } finally {
+            if (!connReleased) locks[availableIndex].release();
+        }
+    }
+
+    private MemorySegment prepareThenFetch(
+            final PreparedStatement preparedStatement,
+            final boolean text) throws TimeoutException {
+
+        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
+        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
+        final var conn = connections[availableIndex];
+        var connReleased = false;
+
+        try {
+            prepare(conn, preparedStatement, stmtName);
+            final var res = text ?
+                    pqx.execPreparedTextResult(conn, preparedStatement) :
+                    pqx.execPreparedBinaryResult(conn, preparedStatement);
+
+            final var status = pqx.resultStatus(res);
+            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                // Release as soon as possible.
+                locks[availableIndex].release();
+                connReleased = true;
+
+                return res;
+            } else {
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        } finally {
+            if (!connReleased) locks[availableIndex].release();
+        }
+    }
+
+    private MemorySegment fetch(
+            final TransactionBlock transactionBlock,
+            final PreparedStatement preparedStatement,
+            final boolean text) {
+
+        checkTransactionBlockSafety(transactionBlock);
+        try {
+            final var res = text ?
+                    pqx.execPreparedTextResult(transactionBlock.getConn(), preparedStatement) :
+                    pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
+
+            final var status = pqx.resultStatus(res);
+            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                return res;
+            } else {
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
+    }
+
+    private MemorySegment prepareThenFetch(
+            final TransactionBlock transactionBlock,
+            final PreparedStatement preparedStatement,
+            final boolean text) {
+
+        checkTransactionBlockSafety(transactionBlock);
+        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
+
+        try {
+            prepare(transactionBlock.getConn(), preparedStatement, stmtName);
+            final var res = text ?
+                    pqx.execPreparedTextResult(transactionBlock.getConn(), preparedStatement) :
+                    pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
+
+            final var status = pqx.resultStatus(res);
+            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
+                return res;
+            } else {
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
+            }
+        } catch (Throwable th) {
+            throw new RuntimeException(th);
+        }
     }
 
     public TransactionBlock begin() throws TimeoutException {
@@ -435,6 +552,24 @@ public class PQCP implements Configurable, AutoCloseable {
             locks[availableIndex].release();
             throw new RuntimeException(th);
         }
+    }
+
+    private String beginQuery(
+            final IsolationLevel isolationLevel,
+            final AccessMode accessMode,
+            final DeferrableMode deferrableMode) {
+
+        var query = format("BEGIN%s%s%s;",
+                isolationLevel != IsolationLevel.NONE ? format(" %s,", isolationLevel.getValue()) : "",
+                accessMode != AccessMode.NONE ? format(" %s,", accessMode.getValue()) : "",
+                deferrableMode != DeferrableMode.NONE ? format(" %s", deferrableMode.getValue()) : "");
+
+        if (query.charAt(query.length() - 2) == ',') {
+            query = query.substring(0, query.length() - 2);
+            query = query + ";";
+        }
+
+        return query;
     }
 
     public void commit(
@@ -507,7 +642,7 @@ public class PQCP implements Configurable, AutoCloseable {
         }
     }
 
-    public Optional<String> fNameOptionalString(
+    public Optional<String> fNameOptional(
             final MemorySegment res,
             final int columnNumber) {
 
@@ -608,155 +743,6 @@ public class PQCP implements Configurable, AutoCloseable {
         }
     }
 
-    private MemorySegment fetch(
-            final PreparedStatement preparedStatement,
-            final boolean text) throws TimeoutException {
-
-        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
-        final var conn = connections[availableIndex];
-        var connReleased = false;
-
-        try {
-            final var res = text ?
-                    pqx.execPreparedTextResult(conn, preparedStatement) :
-                    pqx.execPreparedBinaryResult(conn, preparedStatement);
-
-            final var status = pqx.resultStatus(res);
-            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
-                // Release as soon as possible.
-                locks[availableIndex].release();
-                connReleased = true;
-
-                return res;
-            } else {
-                throw new RuntimeException(pqx.resultErrorMessageString(res));
-            }
-        } catch (Throwable th) {
-            throw new RuntimeException(th);
-        } finally {
-            if (!connReleased) locks[availableIndex].release();
-        }
-    }
-
-    private MemorySegment fetch(
-            final TransactionBlock transactionBlock,
-            final PreparedStatement preparedStatement,
-            final boolean text) {
-
-        checkTransactionBlockSafety(transactionBlock);
-        try {
-            final var res = text ?
-                    pqx.execPreparedTextResult(transactionBlock.getConn(), preparedStatement) :
-                    pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
-
-            final var status = pqx.resultStatus(res);
-            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
-                return res;
-            } else {
-                throw new RuntimeException(pqx.resultErrorMessageString(res));
-            }
-        } catch (Throwable th) {
-            throw new RuntimeException(th);
-        }
-    }
-
-    private MemorySegment prepareThenFetch(
-            final PreparedStatement preparedStatement,
-            final boolean text) throws TimeoutException {
-
-        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
-        final var availableIndex = getAvailableConnectionIndexLocked(true, nanoTime(), 1);
-        final var conn = connections[availableIndex];
-        var connReleased = false;
-
-        try {
-            prepare(conn, preparedStatement, stmtName);
-            final var res = text ?
-                    pqx.execPreparedTextResult(conn, preparedStatement) :
-                    pqx.execPreparedBinaryResult(conn, preparedStatement);
-
-            final var status = pqx.resultStatus(res);
-            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
-                // Release as soon as possible.
-                locks[availableIndex].release();
-                connReleased = true;
-
-                return res;
-            } else {
-                throw new RuntimeException(pqx.resultErrorMessageString(res));
-            }
-        } catch (Throwable th) {
-            throw new RuntimeException(th);
-        } finally {
-            if (!connReleased) locks[availableIndex].release();
-        }
-    }
-
-    private MemorySegment prepareThenFetch(
-            final TransactionBlock transactionBlock,
-            final PreparedStatement preparedStatement,
-            final boolean text) {
-
-        checkTransactionBlockSafety(transactionBlock);
-        final var stmtName = (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment());
-
-        try {
-            prepare(transactionBlock.getConn(), preparedStatement, stmtName);
-            final var res = text ?
-                    pqx.execPreparedTextResult(transactionBlock.getConn(), preparedStatement) :
-                    pqx.execPreparedBinaryResult(transactionBlock.getConn(), preparedStatement);
-
-            final var status = pqx.resultStatus(res);
-            if (status == ExecStatusType.PGRES_COMMAND_OK || status == ExecStatusType.PGRES_TUPLES_OK) {
-                return res;
-            } else {
-                throw new RuntimeException(pqx.resultErrorMessageString(res));
-            }
-        } catch (Throwable th) {
-            throw new RuntimeException(th);
-        }
-    }
-
-    private void prepare(
-            final MemorySegment conn,
-            final PreparedStatement preparedStatement) throws Throwable {
-
-        var res = pqx.describePrepared(conn, (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment()));
-        if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-            // Preparing statement ...
-            res = pqx.prepare(conn, preparedStatement);
-            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
-                throw new RuntimeException(pqx.resultErrorMessageString(res));
-            }
-        }
-    }
-
-    private String beginQuery(
-            final IsolationLevel isolationLevel,
-            final AccessMode accessMode,
-            final DeferrableMode deferrableMode) {
-
-        var query = format("BEGIN%s%s%s;",
-                isolationLevel != IsolationLevel.NONE ? format(" %s,", isolationLevel.getValue()) : "",
-                accessMode != AccessMode.NONE ? format(" %s,", accessMode.getValue()) : "",
-                deferrableMode != DeferrableMode.NONE ? format(" %s", deferrableMode.getValue()) : "");
-
-        if (query.charAt(query.length() - 2) == ',') {
-            query = query.substring(0, query.length() - 2);
-            query = query + ";";
-        }
-
-        return query;
-    }
-
-    private void checkTransactionBlockSafety(
-            final TransactionBlock transactionBlock) {
-
-        if (transactionBlock.getDone().compareAndSet(true, true)) {
-            throw new RuntimeException("transaction done: previously committed or rolled back");
-        }
-    }
-
     protected int getAvailableConnectionIndexLocked(
             final boolean incrementNotAvailability,
             final long start,
@@ -834,6 +820,20 @@ public class PQCP implements Configurable, AutoCloseable {
                 lock.release();
             } finally {
                 if (locks[atIndex] != null) locks[atIndex].release();
+            }
+        }
+    }
+
+    private void prepare(
+            final MemorySegment conn,
+            final PreparedStatement preparedStatement) throws Throwable {
+
+        var res = pqx.describePrepared(conn, (MemorySegment) preparedStatement.var("stmtName").get(preparedStatement.getSegment()));
+        if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+            // Preparing statement ...
+            res = pqx.prepare(conn, preparedStatement);
+            if (pqx.resultStatus(res) != ExecStatusType.PGRES_COMMAND_OK) {
+                throw new RuntimeException(pqx.resultErrorMessageString(res));
             }
         }
     }
