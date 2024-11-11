@@ -52,6 +52,7 @@ import static java.lang.foreign.Arena.ofConfined;
 import static java.lang.foreign.Arena.ofShared;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.logging.Logger.getLogger;
 import static java.util.stream.IntStream.range;
 
 /**
@@ -60,7 +61,7 @@ import static java.util.stream.IntStream.range;
  * @author Alireza Pourtaghi
  */
 public class PQCP implements Configurable, AutoCloseable {
-    private static final Logger logger = Logger.getLogger(PQCP.class.getName());
+    private static final Logger logger = getLogger(PQCP.class.getName());
 
     private final ScheduledExecutorService connectionsStatusCheckerExecutor;
     private final int minPoolSize;
