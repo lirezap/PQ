@@ -12,11 +12,11 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>com.lirezap</groupId>
+    <groupId>software.openex</groupId>
     <artifactId>pq</artifactId>
     <version>0.0.55</version>
     <name>pq</name>
-    <description>Native postgresql access using FFM</description>
+    <description>Native PostgreSQL Access Using FFM</description>
 
     <properties>
         <!-- Java Version-->

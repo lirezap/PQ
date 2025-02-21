@@ -1,4 +1,4 @@
-## Native postgresql access using FFM
+## Native Postgresql Access Using FFM
 
 PQ is a java(23+) library that uses FFM to directly access postgresql. This library is intended to be low level, minimal
 and with the goal of being high performance. Higher level abstractions can be built easily by using provided low level
@@ -97,12 +97,11 @@ Then the library can be used as in:
 ```java
 package com.lirezap.Application;
 
-import com.lirezap.pq.cp.PQCP;
-import com.lirezap.pq.layout.PreparedStatement;
+import software.openex.pq.cp.PQCP;
+import software.openex.pq.layout.PreparedStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.foreign.Arena;
 import java.nio.file.Path;
 
 public final class Application {
